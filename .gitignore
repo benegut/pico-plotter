@@ -7,3 +7,5 @@ main
 pico-plotter
 qcustomplot.h
 .qmake.stash
+test2
+Makefile

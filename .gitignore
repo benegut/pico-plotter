@@ -1,3 +1,9 @@
 ps3000aCon.c
 main
 .txt
+.ccls-chache
+.git
+*.o
+pico-plotter
+qcustomplot.h
+.qmake.stash

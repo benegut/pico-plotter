@@ -7,13 +7,22 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <curses.h>
+//#include <curses.h>
 #include <iostream>
 
 #include <libps3000a-1.1/ps3000aApi.h>
 #ifndef PICO_STATUS
 #include <libps3000a-1.1/PicoStatus.h>
 #endif
+
+#include "qcustomplot.h"
+#include <QApplication>
+#include <QMainWindow>
+#include <QObject>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
 
 #define memcpy_s(a,b,c,d) memcpy(a,c,d)
 
@@ -74,7 +83,7 @@ typedef struct
 }UNIT;
 
 
-bool        g_ready = FALSE;
+bool        g_ready = 0;
 uint32_t	g_startIndex;
 int16_t		g_autoStopped;
 int16_t		g_trig = 0;
@@ -178,7 +187,7 @@ void PREF4 callBackStreaming(
     g_autoStopped	= autoStop;
 
     // flag to say done reading data
-    g_ready = TRUE;
+    g_ready = 1;
 
     if (bufferInfo != NULL && noOfSamples)
       {
@@ -213,7 +222,7 @@ void PREF4 callBackStreaming(
 * - preTrigger - the number of samples in the pre-trigger phase
 *					(0 if no trigger has been set)
 ***************************************************************************/
-void streamDataHandler(UNIT * unit)
+void streamDataHandler(UNIT * unit, int argc, char ** argv)
 {
     int16_t autostop = 0;
     int16_t retry = 0;
@@ -267,7 +276,7 @@ void streamDataHandler(UNIT * unit)
     //printf("\nStreaming Data continually.\n\n");
 
 
-    g_autoStopped = FALSE;
+    g_autoStopped = 0;
 
     do
     {
@@ -319,10 +328,24 @@ void streamDataHandler(UNIT * unit)
 
     totalSamples = 0;
 
+    //    QApplication::instance();
+    // QApplication a(argc, (char **)argv);
+    // QMainWindow window;
+    // QCustomPlot customPlot;
+    // window.setCentralWidget(&customPlot);
+
+    // customPlot.addGraph();
+    // customPlot.graph(0)->setPen(QPen(QColor(40, 110, 255)));
+
+    // customPlot.rescaleAxes();
+    // window.setGeometry(100, 100, 500, 400);
+    // window.show();
+    //a.exec();
+
     while (!_kbhit() && !g_autoStopped)
     {
         // Register callback function with driver and check if data has been received
-        g_ready = FALSE;
+        g_ready = 0;
 
         status = ps3000aGetStreamingLatestValues(unit->handle,
                                                  callBackStreaming,
@@ -419,14 +442,14 @@ void setDefaults(UNIT * unit)
  *  this function demonstrates how to collect a stream of data
  *  from the unit (start collecting immediately)
  ***************************************************************************/
-void collectStreamingImmediate(UNIT * unit)
+void collectStreamingImmediate(UNIT * unit, int argc, char **argv)
 {
   setDefaults(unit);
 
   printf("Collect streaming...\n");
   printf("Data is written to disk file (stream.txt)\n");
 
-  streamDataHandler(unit);
+  streamDataHandler(unit, argc, argv);
 }
 
 
@@ -519,8 +542,8 @@ PICO_STATUS openDevice(UNIT * unit)
 
   for (int i = 0; i < unit->channelCount; i++)
     {
-      unit->channelSettings[i].enabled = TRUE;
-      unit->channelSettings[i].DCcoupled = TRUE;
+      unit->channelSettings[i].enabled = 1;
+      unit->channelSettings[i].DCcoupled = 1;
       unit->channelSettings[i].range = PS3000A_5V;
     }
 
@@ -612,13 +635,13 @@ void setVoltages(UNIT * unit)
             if (unit->channelSettings[ch].range != 99)
             {
                 printf(" - %d mV\n", inputRanges[unit->channelSettings[ch].range]);
-                unit->channelSettings[ch].enabled = TRUE;
+                unit->channelSettings[ch].enabled = 1;
                 count++;
             }
             else
             {
                 printf("Channel Switched off\n");
-                unit->channelSettings[ch].enabled = FALSE;
+                unit->channelSettings[ch].enabled = 0;
                 unit->channelSettings[ch].range = PS3000A_MAX_RANGES-1;
             }
         }
@@ -634,7 +657,8 @@ void setVoltages(UNIT * unit)
  *main()
  ****************************************************************************************
  */
-int main(){
+int main(int argc, char *argv[]){
+
 
   UNIT unit;
   PICO_STATUS status;
@@ -661,7 +685,7 @@ int main(){
         switch (ch)
         {
             case 'S':
-                collectStreamingImmediate(&unit);
+              collectStreamingImmediate(&unit, argc, argv);
                 break;
 
             case 'V':

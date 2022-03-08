@@ -21,6 +21,7 @@
 #include <QObject>
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 #define memcpy_s(a, b, c, d) memcpy(a, c, d)
 
@@ -90,6 +91,7 @@ typedef struct tBufferInfo
 
 class Plot : public QThread
 {
+  Q_OBJECT
 public:
                   Plot();
                   ~Plot(){};

@@ -37,7 +37,7 @@ MOVE          = mv -f
 TAR           = tar -cf
 COMPRESS      = gzip -9f
 DISTNAME      = test1.0.0
-DISTDIR = /home/koyomi/Documents/C++/test/.tmp/test1.0.0
+DISTDIR = /home/avs-es/Documents/C++/pico-plotter/.tmp/test1.0.0
 LINK          = g++
 LFLAGS        = -Wl,-O1
 LIBS          = $(SUBLIBS) -L. -lqcustomplot -L/opt/picoscope/lib -lps3000a /usr/lib/x86_64-linux-gnu/libQt5Widgets.so /usr/lib/x86_64-linux-gnu/libQt5Gui.so /usr/lib/x86_64-linux-gnu/libQt5Core.so -lGL -lpthread   
@@ -54,10 +54,13 @@ OBJECTS_DIR   = ./
 
 SOURCES       = main.cpp \
 		plot.cpp \
-		window.cpp 
+		window.cpp moc_window.cpp \
+		moc_plot.cpp
 OBJECTS       = main.o \
 		plot.o \
-		window.o
+		window.o \
+		moc_window.o \
+		moc_plot.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/unix.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/linux.conf \
@@ -135,7 +138,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exceptions.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/yacc.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
-		test.pro  main.cpp \
+		test.pro window.hpp \
+		plot.hpp main.cpp \
 		plot.cpp \
 		window.cpp
 QMAKE_TARGET  = test
@@ -321,6 +325,7 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents window.hpp plot.hpp $(DISTDIR)/
 	$(COPY_FILE) --parents main.cpp plot.cpp window.cpp $(DISTDIR)/
 
 
@@ -353,8 +358,24 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 	g++ -pipe -O2 -Wall -Wextra -dM -E -o moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all:
+compiler_moc_header_make_all: moc_window.cpp moc_plot.cpp
 compiler_moc_header_clean:
+	-$(DEL_FILE) moc_window.cpp moc_plot.cpp
+moc_window.cpp: window.hpp \
+		plot.hpp \
+		/opt/picoscope/include/libps3000a-1.1/ps3000aApi.h \
+		/opt/picoscope/include/libps3000a-1.1/PicoStatus.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/avs-es/Documents/C++/pico-plotter/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/avs-es/Documents/C++/pico-plotter -I/home/avs-es/Documents/C++/pico-plotter -I/opt/picoscope/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include window.hpp -o moc_window.cpp
+
+moc_plot.cpp: plot.hpp \
+		/opt/picoscope/include/libps3000a-1.1/ps3000aApi.h \
+		/opt/picoscope/include/libps3000a-1.1/PicoStatus.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/avs-es/Documents/C++/pico-plotter/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/avs-es/Documents/C++/pico-plotter -I/home/avs-es/Documents/C++/pico-plotter -I/opt/picoscope/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include plot.hpp -o moc_plot.cpp
+
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
 compiler_moc_source_make_all:
@@ -367,13 +388,14 @@ compiler_yacc_impl_make_all:
 compiler_yacc_impl_clean:
 compiler_lex_make_all:
 compiler_lex_clean:
-compiler_clean: compiler_moc_predefs_clean 
+compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean 
 
 ####### Compile
 
 main.o: main.cpp plot.hpp \
 		/opt/picoscope/include/libps3000a-1.1/ps3000aApi.h \
-		/opt/picoscope/include/libps3000a-1.1/PicoStatus.h
+		/opt/picoscope/include/libps3000a-1.1/PicoStatus.h \
+		window.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
 plot.o: plot.cpp plot.hpp \
@@ -381,8 +403,17 @@ plot.o: plot.cpp plot.hpp \
 		/opt/picoscope/include/libps3000a-1.1/PicoStatus.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o plot.o plot.cpp
 
-window.o: window.cpp 
+window.o: window.cpp window.hpp \
+		plot.hpp \
+		/opt/picoscope/include/libps3000a-1.1/ps3000aApi.h \
+		/opt/picoscope/include/libps3000a-1.1/PicoStatus.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o window.o window.cpp
+
+moc_window.o: moc_window.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_window.o moc_window.cpp
+
+moc_plot.o: moc_plot.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_plot.o moc_plot.cpp
 
 ####### Install
 

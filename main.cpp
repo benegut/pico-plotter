@@ -11,8 +11,7 @@ int main(int argc, char **argv) {
   QApplication app(argc, argv);
   Plot plot;
   plot.start();
-  Window window;
-  QThread::connect(&plot, SIGNAL(sendData(int)), &window, SLOT(data(int)));
+  Window window(&plot);
   window.show();
   return app.exec();
 }

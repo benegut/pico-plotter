@@ -11,13 +11,6 @@ Plot::Plot()
 {
 }
 
-
-void Plot::sendData(int key, int val)
-{
-}
-
-
-
 int32_t Plot::_kbhit()
 {
   struct termios oldt, newt;

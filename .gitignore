@@ -1,4 +1,3 @@
-ps3000aCon.c
 main
 .txt
 .ccls-chache
@@ -8,3 +7,4 @@ pico-plotter
 .qmake.stash
 test2
 Makefile
+pico-plotter

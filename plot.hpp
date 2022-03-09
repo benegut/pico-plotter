@@ -21,7 +21,6 @@
 #include <QObject>
 #include <cstdio>
 #include <cstring>
-#include <string>
 
 #define memcpy_s(a, b, c, d) memcpy(a, c, d)
 
@@ -65,7 +64,6 @@ inline int16_t        g_trig = 0;
 inline uint32_t       g_trigAt = 0;
 inline int32_t        g_sampleCount;
 
-
 inline uint16_t inputRanges [PS3000A_MAX_RANGES] = {10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000};
 
 inline char StreamFile[20]		= "stream.txt";
@@ -93,20 +91,17 @@ class Plot : public QThread
 {
   Q_OBJECT
 public:
-                  Plot();
                   ~Plot(){};
 
 signals:
   void sendData(int, int);
+  void sendData(QVector<double>, QVector<double>, int);
 
 private:
   int32_t         _kbhit();
   int32_t         fopen_s(FILE **,
                           const char *,
                           const char *);
-  int32_t         adc_to_mv(int32_t,
-                            int32_t,
-                            UNIT *);
   PICO_STATUS     changePowerSource(int16_t,
                                     PICO_STATUS);
   static void     callBackStreaming(int16_t,
@@ -117,7 +112,7 @@ private:
                                     int16_t,
                                     int16_t,
                                     void *);
-  void streamDataHandler(UNIT *);
+  void            streamDataHandler(UNIT *);
   void            setDefaults(UNIT *);
   void            collectStreamingImmediate(UNIT *);
   void            get_info(UNIT *);
@@ -125,6 +120,7 @@ private:
   void            closeDevice(UNIT *);
   void            displaySettings(UNIT *);
   void            setVoltages(UNIT *);
+  void            setXYZVoltages(UNIT *);
   void            run();
 };
 

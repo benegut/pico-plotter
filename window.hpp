@@ -15,12 +15,10 @@ public:
 private:
   QCustomPlot             customPlot;
   Plot *                  plot;
-  QVector<double>         x = {0, 1};
-  QVector<double>         y = {0, 1};
-
 
 public slots:
   void data(int, int);
+  void data(QVector<double>, QVector<double>, int);
 };
 
 #endif //WINDOW_H

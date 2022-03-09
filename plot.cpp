@@ -7,10 +7,6 @@
 #include <QThread>
 
 
-Plot::Plot()
-{
-}
-
 int32_t Plot::_kbhit()
 {
   struct termios oldt, newt;
@@ -32,12 +28,6 @@ int32_t Plot::fopen_s(FILE ** a, const char * b, const char * c)
   FILE * fp = fopen(b,c);
   *a = fp;
   return (fp!=0)?0:-1;
-}
-
-
-int32_t Plot::adc_to_mv(int32_t raw, int32_t ch, UNIT * unit)
-{
-  return (raw * inputRanges[ch]) / unit->maxValue;
 }
 
 
@@ -122,11 +112,6 @@ void Plot::callBackStreaming(
                         memcpy_s (&bufferInfo->appBuffers[channel][startIndex], noOfSamples * sizeof(int16_t),
                                   &bufferInfo->driverBuffers[channel][startIndex], noOfSamples * sizeof(int16_t));
                       }
-                    if (bufferInfo->appBuffers[channel] && bufferInfo->driverBuffers[channel])
-                      {
-                        memcpy_s (&bufferInfo->appBuffers[channel][startIndex], noOfSamples * sizeof(int16_t),
-                                  &bufferInfo->driverBuffers[channel][startIndex], noOfSamples * sizeof(int16_t));
-                      }
                   }
               }
           }
@@ -150,6 +135,7 @@ void Plot::streamDataHandler(UNIT * unit)
 
     int32_t index = 0;
     int32_t totalSamples;
+    int totalIndex = 0;
 
     uint32_t preTrigger = 0;
     uint32_t postTrigger = 100;
@@ -193,9 +179,6 @@ void Plot::streamDataHandler(UNIT * unit)
 
     printf("\nStreaming Data for %u samples.\n", postTrigger / downsampleRatio);
 
-    //printf("\nStreaming Data continually.\n\n");
-
-
     g_autoStopped = 0;
 
     do
@@ -212,94 +195,114 @@ void Plot::streamDataHandler(UNIT * unit)
                                      sampleCount);
 
 
-        if(status != PICO_OK)
-        {
-            if(status == PICO_POWER_SUPPLY_CONNECTED ||
-               status == PICO_POWER_SUPPLY_NOT_CONNECTED ||
-               status == PICO_POWER_SUPPLY_UNDERVOLTAGE)
-            {
-                status = changePowerSource(unit->handle, status);
-                retry = 1;
-            }
-            else
-            {
-              printf("StreamDataHandler:ps3000aRunStreaming ------ 0x%08lx \n", (long unsigned int)status);
-              return;
-            }
-        }
+        // if(status != PICO_OK)
+        // {
+        //     if(status == PICO_POWER_SUPPLY_CONNECTED ||
+        //        status == PICO_POWER_SUPPLY_NOT_CONNECTED ||
+        //        status == PICO_POWER_SUPPLY_UNDERVOLTAGE)
+        //     {
+        //         status = changePowerSource(unit->handle, status);
+        //         retry = 1;
+        //     }
+        //     else
+        //     {
+        //       printf("StreamDataHandler:ps3000aRunStreaming ------ 0x%08lx \n", (long unsigned int)status);
+        //       return;
+        //     }
+        // }
     }
     while(retry);
 
     printf("Streaming data...Press a key to stop\n");
 
-    fopen_s(&fp, StreamFile, "w");
 
-    if (fp != NULL)
-      {
-        for (int i = 0; i < unit->channelCount; i++)
-          {
-            if (unit->channelSettings[i].enabled)
-              {
-                fprintf(fp,"&c\t", (char)('A' + i));
-              }
-          }
-        fprintf(fp, "\n");
-      }
+
+
+    // fopen_s(&fp, StreamFile, "w");
+
+    // if (fp != NULL)
+    //   {
+    //     for (int i = 0; i < unit->channelCount; i++)
+    //       {
+    //         if (unit->channelSettings[i].enabled)
+    //           {
+    //             fprintf(fp,"&c\t", (char)('A' + i));
+    //           }
+    //       }
+    //     fprintf(fp, "\n");
+    //   }
+
 
     totalSamples = 0;
 
 
     while (!_kbhit() && !g_autoStopped)
     {
-        // Register callback function with driver and check if data has been received
-        g_ready = 0;
+      // Register callback function with driver and check if data has been received
+      g_ready = 0;
 
-        status = ps3000aGetStreamingLatestValues(unit->handle,
-                                                 this->callBackStreaming,
-                                                 &bufferInfo);
+      status = ps3000aGetStreamingLatestValues(unit->handle,
+                                               this->callBackStreaming,
+                                               &bufferInfo);
 
-        if (status == PICO_POWER_SUPPLY_CONNECTED ||
-            status == PICO_POWER_SUPPLY_NOT_CONNECTED ||
-            status == PICO_POWER_SUPPLY_UNDERVOLTAGE)
+
+      if(g_ready && g_sampleCount > 0)
         {
-            changePowerSource(unit->handle, status);
-            printf("\n\nPower Source Change");
-            powerChange = 1;
-        }
 
-        index ++;
+          QVector<double> key(g_sampleCount);
+          std::iota(key.begin(), key.end(), totalSamples);
 
-        if (g_ready && g_sampleCount > 0) /* can be ready and have no data, if autoStop has fired */
-        {
-            totalSamples += g_sampleCount;
 
-            printf("\nCollected %i samples, index = %u, Total: %d samples ", g_sampleCount, g_startIndex, totalSamples);
+          totalSamples += g_sampleCount;
+          int graph = 0;
 
-            for (int i = g_startIndex; i < (int32_t)(g_startIndex + g_sampleCount); i++)
+          QVector<QVector<double>> vec(g_sampleCount*8);
+
+          for(int i = 0; i < bufferInfo.unit->channelCount; i++)
             {
-                if(fp != NULL)
+              if (bufferInfo.unit->channelSettings[i].enabled)
                 {
-                  for (int j = 0; j < unit->channelCount; j++)
-                    {
-                      if (unit->channelSettings[j].enabled)
-                        {
-                          int16_t val = adc_to_mv(appBuffer[j][i],
-                                    unit->channelSettings[PS3000A_CHANNEL_A + j].range,
-                                    unit);
-                          fprintf(	fp,
-                                    "%+d\t",
-                                    val
-                                    );
-                          emit (sendData(index, val));
-                        }
-                    }
-                  fprintf(fp, "\n");
+                  std::copy(&bufferInfo.appBuffers[i][g_startIndex],
+                            &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
+                            std::back_inserter(vec[i]));
+                  emit (sendData(key, vec[i], graph));
                 }
-                else
-                  {
-                    printf("Cannot open the file %s for writing.\n", StreamFile);
-                  }
+              graph++;
             }
+          index ++;
+
+
+          //     totalSamples += g_sampleCount;
+
+          //     printf("\nCollected %i samples, index = %u, Total: %d samples ", g_sampleCount, g_startIndex, totalSamples);
+
+          //     for (int i = g_startIndex; i < (int32_t)(g_startIndex + g_sampleCount); i++)
+          //     {
+          //         if(fp != NULL)
+          //         {
+          //           int val;
+          //           totalIndex++;
+          //           for (int j = 0; j < unit->channelCount; j++)
+          //             {
+          //               if (unit->channelSettings[j].enabled)
+          //                 {
+          //                   val = adc_to_mv(appBuffer[j][i],
+          //                             unit->channelSettings[PS3000A_CHANNEL_A + j].range,
+          //                             unit);
+          //                   // fprintf(	fp,
+          //                   //           "%+d\t",
+          //                   //           val
+          //                   //           );
+          //                   emit (sendData(totalIndex, val));
+          //                 }
+          //             }
+          //           fprintf(fp, "\n");
+          //         }
+          //         else
+          //           {
+          //             printf("Cannot open the file %s for writing.\n", StreamFile);
+          //           }
+          //     }
         }
     }
 
@@ -310,10 +313,10 @@ void Plot::streamDataHandler(UNIT * unit)
         printf("\nData collection aborted.\n");
     }
 
-    if(fp != NULL)
-    {
-        fclose(fp);
-    }
+    // if(fp != NULL)
+    // {
+    //     fclose(fp);
+    // }
 
     for (int i = 0; i < unit->channelCount; i++)
       {
@@ -561,9 +564,18 @@ void Plot::setVoltages(UNIT * unit)
     setDefaults(unit);	// Put these changes into effect
 }
 
+/****************************************************************************
+ * setVoltages and X/Y/Z channels for xy mode.
+ * Select input voltage ranges for channels
+ ****************************************************************************/
+void Plot::setXYZVoltages(UNIT * unit)
+{
+  printf("\nxyMode\n");
+}
+
 
 /****************************************************************************************
- *main()
+ *run()
  ****************************************************************************************
  */
 void Plot::run(){
@@ -575,41 +587,54 @@ void Plot::run(){
   status = openDevice(&unit);
 
   char ch = '.';
+  char xy = '.';
 
-    while (ch != 'X')
+  while(ch != 'X')
     {
-        displaySettings(&unit);
+      printf("\n\nXY- mode?   (y/n)");
 
-        printf("\n\n");
-        printf("Please select one of the following options:\n\n");
-        printf("S - Immediate streaming                     V - Set voltages\n");
-        printf("                                            X - Exit\n");
-        printf("Operation:");
+      std::cin >> xy;
+      xy = toupper(xy);
 
-        std::cin >> ch;
-        ch = toupper(ch);
+    menu:
+      printf("\n\n");
 
-        printf("\n");
+      displaySettings(&unit);
 
-        switch (ch)
+      printf("\n\n");
+      printf("Please select one of the following options:\n\n");
+      printf("S - Immediate streaming                     V - Set voltages\n");
+      printf("                                            X - Exit Mode\n");
+      printf("Operation:");
+
+      std::cin >> ch;
+      ch = toupper(ch);
+
+      printf("\n");
+
+      switch (ch)
         {
-            case 'S':
-              collectStreamingImmediate(&unit);
-                break;
+        case 'S':
+          collectStreamingImmediate(&unit);
+          break;
 
-            case 'V':
-                setVoltages(&unit);
-                break;
+        case 'V':
+          if(xy == 'Y')
+            setXYZVoltages(&unit);
+          else
+            setVoltages(&unit);
+          goto menu;
 
-            case 'X':
-                break;
+        case 'X':
+          break;
 
-            default:
-                printf("Invalid operation\n");
-                break;
+        default:
+          printf("Invalid operation\n");
+          break;
         }
-    }
 
-    closeDevice(&unit);
-    printf("\nDevice closed. Exit.\n");
+    }
+  closeDevice(&unit);
+  printf("\nDevice closed. Exit.\n");
+  QApplication::instance()->quit();
 }

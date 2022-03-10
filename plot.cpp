@@ -248,61 +248,78 @@ void Plot::streamDataHandler(UNIT * unit)
 
       if(g_ready && g_sampleCount > 0)
         {
-
-          QVector<double> key(g_sampleCount);
-          std::iota(key.begin(), key.end(), totalSamples);
-
-
-          totalSamples += g_sampleCount;
-          int graph = 0;
-
-          QVector<QVector<double>> vec(g_sampleCount*8);
-
-          for(int i = 0; i < bufferInfo.unit->channelCount; i++)
+          if(g_mode == 2)
             {
-              if (bufferInfo.unit->channelSettings[i].enabled)
+              totalSamples += g_sampleCount;
+
+              double x,y,z;
+              for(int i = g_startIndex; i < (int32_t)(g_startIndex + g_sampleCount); i++)
                 {
-                  std::copy(&bufferInfo.appBuffers[i][g_startIndex],
-                            &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
-                            std::back_inserter(vec[i]));
-                  emit (sendData(key, vec[i], graph));
+                  for(int j = 0; j < unit->channelCount; j++)
+                    {
+                      if(unit->channelSettings[j].xymode == 1)
+                        x = ((double)bufferInfo.appBuffers[j][i] + unit->maxValue);
+                      else if(unit->channelSettings[j].xymode == 2)
+                        y = ((double)bufferInfo.appBuffers[j][i] + unit->maxValue);
+                      else if(unit->channelSettings[j].xymode == 3)
+                        z = ((double)bufferInfo.appBuffers[j][i] + unit->maxValue);///(2*unit->maxValue);
+                    }
+                  emit(sendData(x,y,z));
                 }
-              graph++;
             }
-          index ++;
 
+          else if(g_mode == 0)
+            {
+              int graph = 0;
 
-          //     totalSamples += g_sampleCount;
+              QVector<double> key(g_sampleCount);
+              std::iota(key.begin(), key.end(), totalSamples);
 
-          //     printf("\nCollected %i samples, index = %u, Total: %d samples ", g_sampleCount, g_startIndex, totalSamples);
+              totalSamples += g_sampleCount;
 
-          //     for (int i = g_startIndex; i < (int32_t)(g_startIndex + g_sampleCount); i++)
-          //     {
-          //         if(fp != NULL)
-          //         {
-          //           int val;
-          //           totalIndex++;
-          //           for (int j = 0; j < unit->channelCount; j++)
-          //             {
-          //               if (unit->channelSettings[j].enabled)
-          //                 {
-          //                   val = adc_to_mv(appBuffer[j][i],
-          //                             unit->channelSettings[PS3000A_CHANNEL_A + j].range,
-          //                             unit);
-          //                   // fprintf(	fp,
-          //                   //           "%+d\t",
-          //                   //           val
-          //                   //           );
-          //                   emit (sendData(totalIndex, val));
-          //                 }
-          //             }
-          //           fprintf(fp, "\n");
-          //         }
-          //         else
-          //           {
-          //             printf("Cannot open the file %s for writing.\n", StreamFile);
-          //           }
-          //     }
+              QVector<QVector<double>> vec(g_sampleCount*8);
+
+              for(int i = 0; i < bufferInfo.unit->channelCount; i++)
+                {
+                  if (bufferInfo.unit->channelSettings[i].enabled)
+                    {
+                      std::copy(&bufferInfo.appBuffers[i][g_startIndex],
+                                &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
+                                std::back_inserter(vec[i]));
+                      emit (sendData(key, vec[i], graph));
+                      graph++;
+                    }
+                }
+              index ++;
+            }
+
+          else if(g_mode == 1)
+            {
+              totalSamples += g_sampleCount;
+
+              QVector<double> x_vec(g_sampleCount);
+              QVector<double> y_vec(g_sampleCount);
+
+              for(int i = 0; i < bufferInfo.unit->channelCount; i++)
+                {
+                  if (bufferInfo.unit->channelSettings[i].enabled &&
+                      (bufferInfo.unit->channelSettings[i].xymode == 1))
+                    {
+                      std::copy(&bufferInfo.appBuffers[i][g_startIndex],
+                                &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
+                                std::back_inserter(x_vec));
+                    }
+                  else if(bufferInfo.unit->channelSettings[i].enabled &&
+                          (bufferInfo.unit->channelSettings[i].xymode == 2))
+                    {
+                      std::copy(&bufferInfo.appBuffers[i][g_startIndex],
+                                &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
+                                std::back_inserter(y_vec));
+                    }
+                }
+              emit(sendData(x_vec, y_vec));
+              index ++;
+            }
         }
     }
 
@@ -312,11 +329,6 @@ void Plot::streamDataHandler(UNIT * unit)
     {
         printf("\nData collection aborted.\n");
     }
-
-    // if(fp != NULL)
-    // {
-    //     fclose(fp);
-    // }
 
     for (int i = 0; i < unit->channelCount; i++)
       {
@@ -345,6 +357,7 @@ void Plot::setDefaults(UNIT * unit)
                                  (PS3000A_RANGE)unit->channelSettings[PS3000A_CHANNEL_A + i].range, 0);
 
       printf(status?"SetDefaults:ps3000aSetChannel------ 0x%08lx \n":"", (long unsigned int)status);
+
     }
 }
 
@@ -359,7 +372,7 @@ void Plot::collectStreamingImmediate(UNIT * unit)
   setDefaults(unit);
 
   printf("Collect streaming...\n");
-  printf("Data is written to disk file (stream.txt)\n");
+  //printf("Data is written to disk file (stream.txt)\n");
 
   streamDataHandler(unit);
 }
@@ -457,6 +470,7 @@ PICO_STATUS Plot::openDevice(UNIT * unit)
       unit->channelSettings[i].enabled = 1;
       unit->channelSettings[i].DCcoupled = 1;
       unit->channelSettings[i].range = PS3000A_5V;
+      unit->channelSettings[i].xymode = OFF;
     }
 
   setDefaults(unit);
@@ -471,7 +485,6 @@ PICO_STATUS Plot::openDevice(UNIT * unit)
 void Plot::closeDevice(UNIT *unit)
 {
   ps3000aCloseUnit(unit->handle);
-  //QApplication::instance()->exit(EXIT_FAILURE);
 }
 
 
@@ -500,12 +513,13 @@ void Plot::displaySettings(UNIT *unit)
 
             if (voltage < 1000)
             {
-                printf("%dmV\n", voltage);
+                printf("%dmV", voltage);
             }
             else
             {
-                printf("%dV\n", voltage / 1000);
+                printf("%dV", voltage / 1000);
             }
+            printf("           Mode = %s\n", xymode_txt[unit->channelSettings[ch].xymode]);
         }
     }
     printf("\n");
@@ -516,20 +530,26 @@ void Plot::displaySettings(UNIT *unit)
 * setVoltages
 * Select input voltage ranges for channels
 ****************************************************************************/
-void Plot::setVoltages(UNIT * unit)
+void Plot::setVoltages(UNIT * unit, int mode)
 {
     int32_t count = 0;
 
     /* See what ranges are available... */
+    printf("Ranges:\n");
     for (int32_t i = unit->firstRange; i <= unit->lastRange; i++)
     {
         printf("%d -> %d mV\n", i, inputRanges[i]);
     }
+    printf("\nModes:\n");
+    for(int i=0; i<4; i++)
+      printf("%d -> %s\n", i, xymode_txt[i]);
+
+    printf("\n");
 
     do
     {
         /* Ask the user to select a range */
-        printf("Specify voltage range (%d..%d)\n", unit->firstRange, unit->lastRange);
+        printf("Specify voltage range (%d..%d) and mode (0..3)\n", unit->firstRange, unit->lastRange);
         printf("99 - switches channel off\n");
 
         for (int32_t ch = 0; ch < unit->channelCount; ch++)
@@ -537,7 +557,7 @@ void Plot::setVoltages(UNIT * unit)
             printf("\n");
             do
             {
-                printf("Channel %c: ", 'A' + ch);
+                printf("Channel %c range: ", 'A' + ch);
                 fflush(stdin);
                 scanf("%hd", &unit->channelSettings[ch].range);
             } while (unit->channelSettings[ch].range != 99 &&
@@ -556,21 +576,40 @@ void Plot::setVoltages(UNIT * unit)
                 unit->channelSettings[ch].enabled = 0;
                 unit->channelSettings[ch].range = PS3000A_MAX_RANGES-1;
             }
+
+            if((mode == 1) && unit->channelSettings[ch].enabled)
+              {
+                do
+                  {
+                    printf("Channel %c mode: ", 'A' + ch);
+                    fflush(stdin);
+                    scanf("%d", &unit->channelSettings[ch].xymode);
+                    if(unit->channelSettings[ch].xymode >= 3)
+                      printf("\nInvalide XY-Mode.\n");
+                    printf(" - %s\n", xymode_txt[unit->channelSettings[ch].xymode]);
+                  }
+                while(unit->channelSettings[ch].xymode >= 3);
+              }
+
+            else if((mode == 2) && unit->channelSettings[ch].enabled)
+              {
+                do
+                  {
+                    printf("Channel %c mode: ", 'A' + ch);
+                    fflush(stdin);
+                    scanf("%d", &unit->channelSettings[ch].xymode);
+                    if(unit->channelSettings[ch].xymode >= 4)
+                      printf("\nInvalide XYZ-Mode.\n");
+                    printf(" - %s\n", xymode_txt[unit->channelSettings[ch].xymode]);
+                  }
+                while(unit->channelSettings[ch].xymode >= 4);
+              }
         }
         printf(count == 0? "\n** At least 1 channel must be enabled **\n\n":"");
     }
     while(count == 0);	// must have at least one channel enabled
 
     setDefaults(unit);	// Put these changes into effect
-}
-
-/****************************************************************************
- * setVoltages and X/Y/Z channels for xy mode.
- * Select input voltage ranges for channels
- ****************************************************************************/
-void Plot::setXYZVoltages(UNIT * unit)
-{
-  printf("\nxyMode\n");
 }
 
 
@@ -587,14 +626,22 @@ void Plot::run(){
   status = openDevice(&unit);
 
   char ch = '.';
-  char xy = '.';
+  int mode = 3;
 
   while(ch != 'X')
     {
-      printf("\n\nXY- mode?   (y/n)");
+      while(mode>2)
+        {
 
-      std::cin >> xy;
-      xy = toupper(xy);
+          printf("\n");
+          printf("0 -> Function\n");
+          printf("1 -> XY-Mode\n");
+          printf("2 -> XYZ-Mode\n");
+          printf("\n\nChoose Mode: ");
+          scanf("%d", &mode);
+        }
+
+      g_mode = mode;
 
     menu:
       printf("\n\n");
@@ -604,7 +651,7 @@ void Plot::run(){
       printf("\n\n");
       printf("Please select one of the following options:\n\n");
       printf("S - Immediate streaming                     V - Set voltages\n");
-      printf("                                            X - Exit Mode\n");
+      printf("                                            X - Exit\n");
       printf("Operation:");
 
       std::cin >> ch;
@@ -619,10 +666,13 @@ void Plot::run(){
           break;
 
         case 'V':
-          if(xy == 'Y')
-            setXYZVoltages(&unit);
+          setVoltages(&unit, mode);
+          if(mode == 0)
+            emit(setNormalMode(&unit));
+          else if(mode == 1)
+            emit(setXYLineMode(&unit));
           else
-            setVoltages(&unit);
+            emit(setXYMode(&unit));
           goto menu;
 
         case 'X':

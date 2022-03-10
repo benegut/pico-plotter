@@ -26,11 +26,20 @@
 
 #define PREF4 __stdcall
 
+typedef enum
+  {
+    OFF, X, Y, INTENSITY
+  }XYMODE;
+
+inline const char* xymode_txt[] = {"OFF", "X", "Y", "INTENSITY"};
+
+
 typedef struct
 {
   int16_t DCcoupled;
   int16_t range;
   int16_t enabled;
+  XYMODE  xymode;
 }CHANNEL_SETTINGS;
 
 
@@ -63,6 +72,7 @@ inline int16_t        g_autoStopped;
 inline int16_t        g_trig = 0;
 inline uint32_t       g_trigAt = 0;
 inline int32_t        g_sampleCount;
+inline int16_t        g_mode;
 
 inline uint16_t inputRanges [PS3000A_MAX_RANGES] = {10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000};
 
@@ -90,12 +100,14 @@ typedef struct tBufferInfo
 class Plot : public QThread
 {
   Q_OBJECT
-public:
-                  ~Plot(){};
 
 signals:
-  void sendData(int, int);
+  void setXYMode(UNIT *);
+  void setXYLineMode(UNIT *);
+  void setNormalMode(UNIT *);
+  void sendData(double, double, double);
   void sendData(QVector<double>, QVector<double>, int);
+  void sendData(QVector<double>, QVector<double>);
 
 private:
   int32_t         _kbhit();
@@ -119,8 +131,7 @@ private:
   PICO_STATUS     openDevice(UNIT *);
   void            closeDevice(UNIT *);
   void            displaySettings(UNIT *);
-  void            setVoltages(UNIT *);
-  void            setXYZVoltages(UNIT *);
+  void            setVoltages(UNIT *, int);
   void            run();
 };
 

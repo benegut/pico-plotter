@@ -23,8 +23,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_Window_t {
-    QByteArrayData data[4];
-    char stringdata0[29];
+    QByteArrayData data[8];
+    char stringdata0[73];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -34,12 +34,17 @@ struct qt_meta_stringdata_Window_t {
 static const qt_meta_stringdata_Window_t qt_meta_stringdata_Window = {
     {
 QT_MOC_LITERAL(0, 0, 6), // "Window"
-QT_MOC_LITERAL(1, 7, 4), // "data"
-QT_MOC_LITERAL(2, 12, 0), // ""
-QT_MOC_LITERAL(3, 13, 15) // "QVector<double>"
+QT_MOC_LITERAL(1, 7, 9), // "setXYMode"
+QT_MOC_LITERAL(2, 17, 0), // ""
+QT_MOC_LITERAL(3, 18, 5), // "UNIT*"
+QT_MOC_LITERAL(4, 24, 13), // "setNormalMode"
+QT_MOC_LITERAL(5, 38, 13), // "setXYLineMode"
+QT_MOC_LITERAL(6, 52, 4), // "data"
+QT_MOC_LITERAL(7, 57, 15) // "QVector<double>"
 
     },
-    "Window\0data\0\0QVector<double>"
+    "Window\0setXYMode\0\0UNIT*\0setNormalMode\0"
+    "setXYLineMode\0data\0QVector<double>"
 };
 #undef QT_MOC_LITERAL
 
@@ -49,7 +54,7 @@ static const uint qt_meta_data_Window[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-       2,   14, // methods
+       6,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -57,12 +62,20 @@ static const uint qt_meta_data_Window[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    2,   24,    2, 0x0a /* Public */,
-       1,    3,   29,    2, 0x0a /* Public */,
+       1,    1,   44,    2, 0x0a /* Public */,
+       4,    1,   47,    2, 0x0a /* Public */,
+       5,    1,   50,    2, 0x0a /* Public */,
+       6,    3,   53,    2, 0x0a /* Public */,
+       6,    3,   60,    2, 0x0a /* Public */,
+       6,    2,   67,    2, 0x0a /* Public */,
 
  // slots: parameters
-    QMetaType::Void, QMetaType::Int, QMetaType::Int,    2,    2,
-    QMetaType::Void, 0x80000000 | 3, 0x80000000 | 3, QMetaType::Int,    2,    2,    2,
+    QMetaType::Void, 0x80000000 | 3,    2,
+    QMetaType::Void, 0x80000000 | 3,    2,
+    QMetaType::Void, 0x80000000 | 3,    2,
+    QMetaType::Void, QMetaType::Double, QMetaType::Double, QMetaType::Double,    2,    2,    2,
+    QMetaType::Void, 0x80000000 | 7, 0x80000000 | 7, QMetaType::Int,    2,    2,    2,
+    QMetaType::Void, 0x80000000 | 7, 0x80000000 | 7,    2,    2,
 
        0        // eod
 };
@@ -73,14 +86,26 @@ void Window::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
         auto *_t = static_cast<Window *>(_o);
         Q_UNUSED(_t)
         switch (_id) {
-        case 0: _t->data((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2]))); break;
-        case 1: _t->data((*reinterpret_cast< QVector<double>(*)>(_a[1])),(*reinterpret_cast< QVector<double>(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3]))); break;
+        case 0: _t->setXYMode((*reinterpret_cast< UNIT*(*)>(_a[1]))); break;
+        case 1: _t->setNormalMode((*reinterpret_cast< UNIT*(*)>(_a[1]))); break;
+        case 2: _t->setXYLineMode((*reinterpret_cast< UNIT*(*)>(_a[1]))); break;
+        case 3: _t->data((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
+        case 4: _t->data((*reinterpret_cast< QVector<double>(*)>(_a[1])),(*reinterpret_cast< QVector<double>(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3]))); break;
+        case 5: _t->data((*reinterpret_cast< QVector<double>(*)>(_a[1])),(*reinterpret_cast< QVector<double>(*)>(_a[2]))); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         switch (_id) {
         default: *reinterpret_cast<int*>(_a[0]) = -1; break;
-        case 1:
+        case 4:
+            switch (*reinterpret_cast<int*>(_a[1])) {
+            default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+            case 1:
+            case 0:
+                *reinterpret_cast<int*>(_a[0]) = qRegisterMetaType< QVector<double> >(); break;
+            }
+            break;
+        case 5:
             switch (*reinterpret_cast<int*>(_a[1])) {
             default: *reinterpret_cast<int*>(_a[0]) = -1; break;
             case 1:
@@ -121,13 +146,13 @@ int Window::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 2)
+        if (_id < 6)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 2;
+        _id -= 6;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 2)
+        if (_id < 6)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 2;
+        _id -= 6;
     }
     return _id;
 }

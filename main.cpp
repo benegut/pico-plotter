@@ -12,6 +12,5 @@ int main(int argc, char **argv) {
   Plot plot;
   plot.start();
   Window window(&plot);
-  window.show();
   return app.exec();
 }

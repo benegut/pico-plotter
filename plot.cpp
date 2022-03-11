@@ -286,6 +286,8 @@ void Plot::streamDataHandler(UNIT * unit)
                       std::copy(&bufferInfo.appBuffers[i][g_startIndex],
                                 &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
                                 std::back_inserter(vec[i]));
+                      int ind = unit->firstRange + unit->channelSettings[i].range;
+                      for(int j = 0; j < g_sampleCount; j++){vec[i][j] *= ((double)inputRanges[ind])/((double)unit->maxValue);}
                       emit (sendData(key, vec[i], graph));
                       graph++;
                     }
@@ -297,28 +299,41 @@ void Plot::streamDataHandler(UNIT * unit)
             {
               totalSamples += g_sampleCount;
 
-              QVector<double> x_vec(g_sampleCount);
-              QVector<double> y_vec(g_sampleCount);
-
-              for(int i = 0; i < bufferInfo.unit->channelCount; i++)
+              int x,y;
+              for(int i = g_startIndex; i < (int32_t)(g_startIndex + g_sampleCount); i++)
                 {
-                  if (bufferInfo.unit->channelSettings[i].enabled &&
-                      (bufferInfo.unit->channelSettings[i].xymode == 1))
+                  for(int j = 0; j < unit->channelCount; j++)
                     {
-                      std::copy(&bufferInfo.appBuffers[i][g_startIndex],
-                                &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
-                                std::back_inserter(x_vec));
+                      if(unit->channelSettings[j].xymode == 1)
+                        x = (bufferInfo.appBuffers[j][i] + unit->maxValue);
+                      else if(unit->channelSettings[j].xymode == 2)
+                        y = (bufferInfo.appBuffers[j][i] + unit->maxValue);
                     }
-                  else if(bufferInfo.unit->channelSettings[i].enabled &&
-                          (bufferInfo.unit->channelSettings[i].xymode == 2))
-                    {
-                      std::copy(&bufferInfo.appBuffers[i][g_startIndex],
-                                &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
-                                std::back_inserter(y_vec));
-                    }
+                  emit(sendData(x,y));
                 }
-              emit(sendData(x_vec, y_vec));
-              index ++;
+
+              // QVector<double> x_vec(g_sampleCount);
+              // QVector<double> y_vec(g_sampleCount);
+
+              // for(int i = 0; i < bufferInfo.unit->channelCount; i++)
+              //   {
+              //     if (bufferInfo.unit->channelSettings[i].enabled &&
+              //         (bufferInfo.unit->channelSettings[i].xymode == 1))
+              //       {
+              //         std::copy(&bufferInfo.appBuffers[i][g_startIndex],
+              //                   &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
+              //                   std::back_inserter(x_vec));
+              //       }
+              //     else if(bufferInfo.unit->channelSettings[i].enabled &&
+              //             (bufferInfo.unit->channelSettings[i].xymode == 2))
+              //       {
+              //         std::copy(&bufferInfo.appBuffers[i][g_startIndex],
+              //                   &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
+              //                   std::back_inserter(y_vec));
+              //       }
+              //   }
+              // emit(sendData(x_vec, y_vec));
+              // index ++;
             }
         }
     }

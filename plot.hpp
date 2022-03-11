@@ -106,6 +106,7 @@ signals:
   void setXYLineMode(UNIT *);
   void setNormalMode(UNIT *);
   void sendData(double, double, double);
+  void sendData(int, int);
   void sendData(QVector<double>, QVector<double>, int);
   void sendData(QVector<double>, QVector<double>);
 

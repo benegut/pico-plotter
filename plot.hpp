@@ -21,6 +21,8 @@
 #include <QObject>
 #include <cstdio>
 #include <cstring>
+#include <vector>
+#include <queue>
 
 #define memcpy_s(a, b, c, d) memcpy(a, c, d)
 
@@ -40,6 +42,7 @@ typedef struct
   int16_t range;
   int16_t enabled;
   XYMODE  xymode;
+  int16_t graph;
 }CHANNEL_SETTINGS;
 
 
@@ -62,6 +65,9 @@ typedef struct
   PS3000A_RANGE             lastRange;
   int16_t                   channelCount;
   int16_t                   maxValue;
+  int32_t                   timeBase;
+  int32_t                   timeBaseStart;
+  int32_t                   timeBaseEnd;
   CHANNEL_SETTINGS          channelSettings [PS3000A_MAX_CHANNELS];
 }UNIT;
 
@@ -69,8 +75,6 @@ typedef struct
 inline bool           g_ready = 0;
 inline uint32_t       g_startIndex;
 inline int16_t        g_autoStopped;
-inline int16_t        g_trig = 0;
-inline uint32_t       g_trigAt = 0;
 inline int32_t        g_sampleCount;
 inline int16_t        g_mode;
 
@@ -103,14 +107,17 @@ class Plot : public QThread
 
 signals:
   void setXYMode(UNIT *);
-  void setXYLineMode(UNIT *);
+  void setXYZMode(UNIT *);
   void setNormalMode(UNIT *);
   void sendData(double, double, double);
-  void sendData(int, int);
+  void sendData(double, double);
   void sendData(QVector<double>, QVector<double>, int);
   void sendData(QVector<double>, QVector<double>);
+  void changeAxis(UNIT *);
+  void resetPlot(UNIT *);
 
 private:
+  int32_t         _getch();
   int32_t         _kbhit();
   int32_t         fopen_s(FILE **,
                           const char *,
@@ -134,6 +141,10 @@ private:
   void            displaySettings(UNIT *);
   void            setVoltages(UNIT *, int);
   void            run();
+
+public:
+  std::queue<std::vector<int>>          xyLine;
+  int16_t                               xyLineSize;
 };
 
 

@@ -7,10 +7,33 @@
 #include <QThread>
 
 
+int32_t Plot::_getch()
+{
+  struct termios oldt, newt;
+  int32_t ch;
+  int32_t bytesWaiting;
+  tcgetattr(STDIN_FILENO, &oldt);
+  newt = oldt;
+  newt.c_lflag &= ~( ICANON | ECHO );
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+  setbuf(stdin, NULL);
+  do {
+    ioctl(STDIN_FILENO, FIONREAD, &bytesWaiting);
+    if (bytesWaiting)
+      getchar();
+  } while (bytesWaiting);
+
+  ch = getchar();
+
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+  return ch;
+}
+
+
 int32_t Plot::_kbhit()
 {
   struct termios oldt, newt;
-  int32_t bytesWaiting;
+  int32_t bytesWaiting = 0;
   tcgetattr(STDIN_FILENO, &oldt);
   newt = oldt;
   newt.c_lflag &= ~( ICANON | ECHO );
@@ -19,6 +42,7 @@ int32_t Plot::_kbhit()
   ioctl(STDIN_FILENO, FIONREAD, &bytesWaiting);
 
   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+  //std::cout << bytesWaiting << std::endl;
   return bytesWaiting;
 }
 
@@ -133,7 +157,6 @@ void Plot::streamDataHandler(UNIT * unit)
     int16_t retry = 0;
     int16_t powerChange = 0;
 
-    int32_t index = 0;
     int32_t totalSamples;
     int totalIndex = 0;
 
@@ -149,7 +172,11 @@ void Plot::streamDataHandler(UNIT * unit)
     PICO_STATUS status;
 
     BUFFER_INFO bufferInfo;
-    FILE * fp = NULL;
+
+
+    if(g_mode == 0)
+      emit(resetPlot(unit));
+
 
     for (int i = 0; i < unit->channelCount; i++)
       {
@@ -193,51 +220,16 @@ void Plot::streamDataHandler(UNIT * unit)
                                      downsampleRatio,
                                      PS3000A_RATIO_MODE_NONE,
                                      sampleCount);
-
-
-        // if(status != PICO_OK)
-        // {
-        //     if(status == PICO_POWER_SUPPLY_CONNECTED ||
-        //        status == PICO_POWER_SUPPLY_NOT_CONNECTED ||
-        //        status == PICO_POWER_SUPPLY_UNDERVOLTAGE)
-        //     {
-        //         status = changePowerSource(unit->handle, status);
-        //         retry = 1;
-        //     }
-        //     else
-        //     {
-        //       printf("StreamDataHandler:ps3000aRunStreaming ------ 0x%08lx \n", (long unsigned int)status);
-        //       return;
-        //     }
-        // }
     }
     while(retry);
 
     printf("Streaming data...Press a key to stop\n");
 
 
-
-
-    // fopen_s(&fp, StreamFile, "w");
-
-    // if (fp != NULL)
-    //   {
-    //     for (int i = 0; i < unit->channelCount; i++)
-    //       {
-    //         if (unit->channelSettings[i].enabled)
-    //           {
-    //             fprintf(fp,"&c\t", (char)('A' + i));
-    //           }
-    //       }
-    //     fprintf(fp, "\n");
-    //   }
-
-
     totalSamples = 0;
 
-
-    while (!_kbhit() && !g_autoStopped)
-    {
+    do
+      {
       // Register callback function with driver and check if data has been received
       g_ready = 0;
 
@@ -245,37 +237,18 @@ void Plot::streamDataHandler(UNIT * unit)
                                                this->callBackStreaming,
                                                &bufferInfo);
 
-
       if(g_ready && g_sampleCount > 0)
         {
-          if(g_mode == 2)
+
+          if(g_mode == 0)
             {
-              totalSamples += g_sampleCount;
-
-              double x,y,z;
-              for(int i = g_startIndex; i < (int32_t)(g_startIndex + g_sampleCount); i++)
-                {
-                  for(int j = 0; j < unit->channelCount; j++)
-                    {
-                      if(unit->channelSettings[j].xymode == 1)
-                        x = ((double)bufferInfo.appBuffers[j][i] + unit->maxValue);
-                      else if(unit->channelSettings[j].xymode == 2)
-                        y = ((double)bufferInfo.appBuffers[j][i] + unit->maxValue);
-                      else if(unit->channelSettings[j].xymode == 3)
-                        z = ((double)bufferInfo.appBuffers[j][i] + unit->maxValue);///(2*unit->maxValue);
-                    }
-                  emit(sendData(x,y,z));
-                }
-            }
-
-          else if(g_mode == 0)
-            {
-              int graph = 0;
-
               QVector<double> key(g_sampleCount);
               std::iota(key.begin(), key.end(), totalSamples);
 
               totalSamples += g_sampleCount;
+
+              if(totalSamples >= unit->timeBaseStart + unit->timeBase)
+                emit(changeAxis(unit));
 
               QVector<QVector<double>> vec(g_sampleCount*8);
 
@@ -288,56 +261,69 @@ void Plot::streamDataHandler(UNIT * unit)
                                 std::back_inserter(vec[i]));
                       int ind = unit->firstRange + unit->channelSettings[i].range;
                       for(int j = 0; j < g_sampleCount; j++){vec[i][j] *= ((double)inputRanges[ind])/((double)unit->maxValue);}
-                      emit (sendData(key, vec[i], graph));
-                      graph++;
+                      emit (sendData(key, vec[i], unit->channelSettings[i].graph));
                     }
                 }
-              index ++;
             }
 
           else if(g_mode == 1)
             {
               totalSamples += g_sampleCount;
-
-              int x,y;
+              double x,y;
               for(int i = g_startIndex; i < (int32_t)(g_startIndex + g_sampleCount); i++)
                 {
                   for(int j = 0; j < unit->channelCount; j++)
                     {
+                      int ind = unit->firstRange + unit->channelSettings[j].range;
                       if(unit->channelSettings[j].xymode == 1)
-                        x = (bufferInfo.appBuffers[j][i] + unit->maxValue);
+                        x = ((double)bufferInfo.appBuffers[j][i]*((double)inputRanges[ind])/((double)unit->maxValue));
                       else if(unit->channelSettings[j].xymode == 2)
-                        y = (bufferInfo.appBuffers[j][i] + unit->maxValue);
+                        y = ((double)bufferInfo.appBuffers[j][i]*((double)inputRanges[ind])/((double)unit->maxValue));
                     }
                   emit(sendData(x,y));
                 }
+            }
 
-              // QVector<double> x_vec(g_sampleCount);
-              // QVector<double> y_vec(g_sampleCount);
+          else if(g_mode == 2)
+            {
+              totalSamples += g_sampleCount;
 
-              // for(int i = 0; i < bufferInfo.unit->channelCount; i++)
-              //   {
-              //     if (bufferInfo.unit->channelSettings[i].enabled &&
-              //         (bufferInfo.unit->channelSettings[i].xymode == 1))
-              //       {
-              //         std::copy(&bufferInfo.appBuffers[i][g_startIndex],
-              //                   &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
-              //                   std::back_inserter(x_vec));
-              //       }
-              //     else if(bufferInfo.unit->channelSettings[i].enabled &&
-              //             (bufferInfo.unit->channelSettings[i].xymode == 2))
-              //       {
-              //         std::copy(&bufferInfo.appBuffers[i][g_startIndex],
-              //                   &bufferInfo.appBuffers[i][g_startIndex+g_sampleCount],
-              //                   std::back_inserter(y_vec));
-              //       }
-              //   }
-              // emit(sendData(x_vec, y_vec));
-              // index ++;
+              double x,y,z;
+              for(int i = g_startIndex; i < (int32_t)(g_startIndex + g_sampleCount); i++)
+                {
+                  for(int j = 0; j < unit->channelCount; j++)
+                    {
+                      int ind = unit->firstRange + unit->channelSettings[j].range;
+                      if(unit->channelSettings[j].xymode == 1)
+                        x = ((double)bufferInfo.appBuffers[j][i]*((double)inputRanges[ind])/((double)unit->maxValue));
+                      else if(unit->channelSettings[j].xymode == 2)
+                        y = ((double)bufferInfo.appBuffers[j][i]*((double)inputRanges[ind])/((double)unit->maxValue));
+                      else if(unit->channelSettings[j].xymode == 3)
+                        z = ((double)bufferInfo.appBuffers[j][i]/((double)unit->maxValue));
+                    }
+                  emit(sendData(x,y,z));
+                }
             }
         }
-    }
 
+      if(_kbhit())
+        {
+          char ch;
+          std::cout << "Exit Stream? [Y/n]" << std::endl;
+          ch = _getch();
+          ch = toupper(ch);
+          if(ch == '\n' || ch == 'Y')
+            {              std::cout << _kbhit() << std::endl;
+
+           goto exit;
+            }
+          else
+            continue;
+        }
+    }
+ while (!_kbhit() && !g_autoStopped);
+
+ exit:
     ps3000aStop(unit->handle);
 
     if (!g_autoStopped && !powerChange)
@@ -567,6 +553,8 @@ void Plot::setVoltages(UNIT * unit, int mode)
         printf("Specify voltage range (%d..%d) and mode (0..3)\n", unit->firstRange, unit->lastRange);
         printf("99 - switches channel off\n");
 
+        int16_t graph = 0;
+
         for (int32_t ch = 0; ch < unit->channelCount; ch++)
         {
             printf("\n");
@@ -583,6 +571,8 @@ void Plot::setVoltages(UNIT * unit, int mode)
             {
                 printf(" - %d mV\n", inputRanges[unit->channelSettings[ch].range]);
                 unit->channelSettings[ch].enabled = 1;
+                unit->channelSettings[ch].graph = graph;
+                graph++;
                 count++;
             }
             else
@@ -624,6 +614,17 @@ void Plot::setVoltages(UNIT * unit, int mode)
     }
     while(count == 0);	// must have at least one channel enabled
 
+    if(mode == 0)
+      {
+        printf("\n");
+        printf("Set time base (x1000): ");
+        int t;
+        scanf("%d", &t);
+        unit->timeBase = t*1000;
+        unit->timeBaseStart = 0;
+        unit->timeBaseEnd = unit->timeBase;
+      }
+
     setDefaults(unit);	// Put these changes into effect
 }
 
@@ -653,7 +654,8 @@ void Plot::run(){
           printf("1 -> XY-Mode\n");
           printf("2 -> XYZ-Mode\n");
           printf("\n\nChoose Mode: ");
-          scanf("%d", &mode);
+          ch = _getch();
+          mode = atoi(&ch);
         }
 
       g_mode = mode;
@@ -669,7 +671,7 @@ void Plot::run(){
       printf("                                            X - Exit\n");
       printf("Operation:");
 
-      std::cin >> ch;
+      ch = _getch();
       ch = toupper(ch);
 
       printf("\n");
@@ -685,9 +687,9 @@ void Plot::run(){
           if(mode == 0)
             emit(setNormalMode(&unit));
           else if(mode == 1)
-            emit(setXYLineMode(&unit));
-          else
             emit(setXYMode(&unit));
+          else
+            emit(setXYZMode(&unit));
           goto menu;
 
         case 'X':

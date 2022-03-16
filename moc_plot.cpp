@@ -23,8 +23,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_Plot_t {
-    QByteArrayData data[8];
-    char stringdata0[75];
+    QByteArrayData data[10];
+    char stringdata0[93];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -37,14 +37,17 @@ QT_MOC_LITERAL(0, 0, 4), // "Plot"
 QT_MOC_LITERAL(1, 5, 9), // "setXYMode"
 QT_MOC_LITERAL(2, 15, 0), // ""
 QT_MOC_LITERAL(3, 16, 5), // "UNIT*"
-QT_MOC_LITERAL(4, 22, 13), // "setXYLineMode"
-QT_MOC_LITERAL(5, 36, 13), // "setNormalMode"
-QT_MOC_LITERAL(6, 50, 8), // "sendData"
-QT_MOC_LITERAL(7, 59, 15) // "QVector<double>"
+QT_MOC_LITERAL(4, 22, 10), // "setXYZMode"
+QT_MOC_LITERAL(5, 33, 13), // "setNormalMode"
+QT_MOC_LITERAL(6, 47, 8), // "sendData"
+QT_MOC_LITERAL(7, 56, 15), // "QVector<double>"
+QT_MOC_LITERAL(8, 72, 10), // "changeAxis"
+QT_MOC_LITERAL(9, 83, 9) // "resetPlot"
 
     },
-    "Plot\0setXYMode\0\0UNIT*\0setXYLineMode\0"
-    "setNormalMode\0sendData\0QVector<double>"
+    "Plot\0setXYMode\0\0UNIT*\0setXYZMode\0"
+    "setNormalMode\0sendData\0QVector<double>\0"
+    "changeAxis\0resetPlot"
 };
 #undef QT_MOC_LITERAL
 
@@ -54,30 +57,34 @@ static const uint qt_meta_data_Plot[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-       7,   14, // methods
+       9,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-       7,       // signalCount
+       9,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,   49,    2, 0x06 /* Public */,
-       4,    1,   52,    2, 0x06 /* Public */,
-       5,    1,   55,    2, 0x06 /* Public */,
-       6,    3,   58,    2, 0x06 /* Public */,
-       6,    2,   65,    2, 0x06 /* Public */,
-       6,    3,   70,    2, 0x06 /* Public */,
-       6,    2,   77,    2, 0x06 /* Public */,
+       1,    1,   59,    2, 0x06 /* Public */,
+       4,    1,   62,    2, 0x06 /* Public */,
+       5,    1,   65,    2, 0x06 /* Public */,
+       6,    3,   68,    2, 0x06 /* Public */,
+       6,    2,   75,    2, 0x06 /* Public */,
+       6,    3,   80,    2, 0x06 /* Public */,
+       6,    2,   87,    2, 0x06 /* Public */,
+       8,    1,   92,    2, 0x06 /* Public */,
+       9,    1,   95,    2, 0x06 /* Public */,
 
  // signals: parameters
     QMetaType::Void, 0x80000000 | 3,    2,
     QMetaType::Void, 0x80000000 | 3,    2,
     QMetaType::Void, 0x80000000 | 3,    2,
     QMetaType::Void, QMetaType::Double, QMetaType::Double, QMetaType::Double,    2,    2,    2,
-    QMetaType::Void, QMetaType::Int, QMetaType::Int,    2,    2,
+    QMetaType::Void, QMetaType::Double, QMetaType::Double,    2,    2,
     QMetaType::Void, 0x80000000 | 7, 0x80000000 | 7, QMetaType::Int,    2,    2,    2,
     QMetaType::Void, 0x80000000 | 7, 0x80000000 | 7,    2,    2,
+    QMetaType::Void, 0x80000000 | 3,    2,
+    QMetaType::Void, 0x80000000 | 3,    2,
 
        0        // eod
 };
@@ -89,12 +96,14 @@ void Plot::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void *
         Q_UNUSED(_t)
         switch (_id) {
         case 0: _t->setXYMode((*reinterpret_cast< UNIT*(*)>(_a[1]))); break;
-        case 1: _t->setXYLineMode((*reinterpret_cast< UNIT*(*)>(_a[1]))); break;
+        case 1: _t->setXYZMode((*reinterpret_cast< UNIT*(*)>(_a[1]))); break;
         case 2: _t->setNormalMode((*reinterpret_cast< UNIT*(*)>(_a[1]))); break;
         case 3: _t->sendData((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
-        case 4: _t->sendData((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2]))); break;
+        case 4: _t->sendData((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
         case 5: _t->sendData((*reinterpret_cast< QVector<double>(*)>(_a[1])),(*reinterpret_cast< QVector<double>(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3]))); break;
         case 6: _t->sendData((*reinterpret_cast< QVector<double>(*)>(_a[1])),(*reinterpret_cast< QVector<double>(*)>(_a[2]))); break;
+        case 7: _t->changeAxis((*reinterpret_cast< UNIT*(*)>(_a[1]))); break;
+        case 8: _t->resetPlot((*reinterpret_cast< UNIT*(*)>(_a[1]))); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
@@ -128,7 +137,7 @@ void Plot::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void *
         }
         {
             using _t = void (Plot::*)(UNIT * );
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Plot::setXYLineMode)) {
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Plot::setXYZMode)) {
                 *result = 1;
                 return;
             }
@@ -148,7 +157,7 @@ void Plot::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void *
             }
         }
         {
-            using _t = void (Plot::*)(int , int );
+            using _t = void (Plot::*)(double , double );
             if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Plot::sendData)) {
                 *result = 4;
                 return;
@@ -165,6 +174,20 @@ void Plot::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void *
             using _t = void (Plot::*)(QVector<double> , QVector<double> );
             if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Plot::sendData)) {
                 *result = 6;
+                return;
+            }
+        }
+        {
+            using _t = void (Plot::*)(UNIT * );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Plot::changeAxis)) {
+                *result = 7;
+                return;
+            }
+        }
+        {
+            using _t = void (Plot::*)(UNIT * );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Plot::resetPlot)) {
+                *result = 8;
                 return;
             }
         }
@@ -200,13 +223,13 @@ int Plot::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 7)
+        if (_id < 9)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 7;
+        _id -= 9;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 7)
+        if (_id < 9)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 7;
+        _id -= 9;
     }
     return _id;
 }
@@ -219,7 +242,7 @@ void Plot::setXYMode(UNIT * _t1)
 }
 
 // SIGNAL 1
-void Plot::setXYLineMode(UNIT * _t1)
+void Plot::setXYZMode(UNIT * _t1)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
     QMetaObject::activate(this, &staticMetaObject, 1, _a);
@@ -240,7 +263,7 @@ void Plot::sendData(double _t1, double _t2, double _t3)
 }
 
 // SIGNAL 4
-void Plot::sendData(int _t1, int _t2)
+void Plot::sendData(double _t1, double _t2)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))) };
     QMetaObject::activate(this, &staticMetaObject, 4, _a);
@@ -258,6 +281,20 @@ void Plot::sendData(QVector<double> _t1, QVector<double> _t2)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))) };
     QMetaObject::activate(this, &staticMetaObject, 6, _a);
+}
+
+// SIGNAL 7
+void Plot::changeAxis(UNIT * _t1)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    QMetaObject::activate(this, &staticMetaObject, 7, _a);
+}
+
+// SIGNAL 8
+void Plot::resetPlot(UNIT * _t1)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    QMetaObject::activate(this, &staticMetaObject, 8, _a);
 }
 QT_WARNING_POP
 QT_END_MOC_NAMESPACE

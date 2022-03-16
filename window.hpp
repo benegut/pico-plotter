@@ -22,16 +22,18 @@ private:
   QCustomPlot             customPlot;
   Plot *                  plot;
   QCPColorMap *           colorMap = new QCPColorMap(customPlot.xAxis, customPlot.yAxis);
-  
+
 
 public slots:
   void setXYMode(UNIT *);
+  void setXYZMode(UNIT *);
   void setNormalMode(UNIT *);
-  void setXYLineMode(UNIT *);
   void data(double, double, double);
-  void data(int, int);
+  void data(double, double);
   void data(QVector<double>, QVector<double>, int);
   void data(QVector<double>, QVector<double>);
+  void changeAxis(UNIT *);
+  void resetPlot(UNIT *);
 };
 
 #endif //WINDOW_H

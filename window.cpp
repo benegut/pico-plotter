@@ -3,16 +3,65 @@
 
 Window::Window(Plot * p)
   : plot(p)
+  , colorMap(new QCPColorMap(customPlot.xAxis, customPlot.yAxis))
+  , toolBar(new QToolBar())
+  , counter(0)
+{
+  setMainWindow();
+  setActions();
+  setConnections();
+}
+
+
+void Window::setMainWindow()
 {
   setCentralWidget(&customPlot);
   resize(600, 600);
+  addToolBar(toolBar);
+}
+
+
+void Window::setActions()
+{
+  resetCanvasAction = new QAction();
+  toolBar->addAction(resetCanvasAction);
+  resetCanvasAction->setIconText("Reset");
+  connect(resetCanvasAction, SIGNAL(triggered()), this, SLOT(resetCanvas()));
+
+  setResetCycleStartAction = new QAction();
+  setResetCycleStartAction->setIconText("Shift");
+  toolBar->addAction(setResetCycleStartAction);
+  connect(setResetCycleStartAction, SIGNAL(triggered()), this, SLOT(setResetCycleStart()));
+
+  sizeBox = new QSpinBox();
+  sizeBox->setMaximum(250);
+  sizeBox->setMinimum(50);
+  sizeBox->setSingleStep(10);
+  sizeBox->setValue(210);
+  toolBar->addWidget(sizeBox);
+  connect(sizeBox, SIGNAL(valueChanged(int)), this, SLOT(setResolution(int)));
+
+  periodBox = new QSpinBox();
+  periodBox->setMaximum(100000);
+  periodBox->setMinimum(0);
+  periodBox->setSingleStep(1000);
+  periodBox->setValue(10000);
+
+}
+
+
+
+void Window::setConnections()
+{
   connect(plot, SIGNAL(sendData(QVector<double>, QVector<double>, int)), this, SLOT(data(QVector<double>, QVector<double>, int)));
   connect(plot, SIGNAL(sendData(double, double, double)), this, SLOT(data(double, double, double)));
   connect(plot, SIGNAL(sendData(QVector<double>, QVector<double>)), this, SLOT(data(QVector<double>, QVector<double>)));
   connect(plot, SIGNAL(sendData(double, double)), this, SLOT(data(double, double)));
+
   connect(plot, SIGNAL(setXYMode(UNIT *)), this, SLOT(setXYMode(UNIT *)));
   connect(plot, SIGNAL(setXYZMode(UNIT *)), this, SLOT(setXYZMode(UNIT *)));
   connect(plot, SIGNAL(setNormalMode(UNIT *)), this, SLOT(setNormalMode(UNIT *)));
+
   connect(plot, SIGNAL(changeAxis(UNIT *)), this, SLOT(changeAxis(UNIT *)));
   connect(plot, SIGNAL(resetPlot(UNIT *)), this, SLOT(resetPlot(UNIT *)));
 }
@@ -102,7 +151,7 @@ void Window::data(double x, double y, double z)                   //Maybe merge 
       customPlot.replot();
       customPlot.show();
     }
-  if(counter%50000 == 0)
+  if(counter%period == 0)
     colorMap->data()->fill(0.0);
 }
 
@@ -161,3 +210,27 @@ void Window::resetPlot(UNIT * unit)
   setNormalMode(unit);
 }
 
+
+void Window::resetCanvas()
+{
+  colorMap->data()->fill(0.0);
+}
+
+
+void Window::setPeriod(int newPeriod)
+{
+}
+
+
+
+void Window::setResetCycleStart()
+{
+  counter += 100;
+}
+
+
+void Window::setResolution(int size)
+{
+  colorMap->data()->setSize(size, size);
+  customPlot.replot();
+}

@@ -23,6 +23,7 @@
 #include <cstring>
 #include <vector>
 #include <queue>
+#include <string>
 
 #define memcpy_s(a, b, c, d) memcpy(a, c, d)
 
@@ -43,6 +44,7 @@ typedef struct
   int16_t enabled;
   XYMODE  xymode;
   int16_t graph;
+  float   offset;
 }CHANNEL_SETTINGS;
 
 

@@ -5,6 +5,7 @@
 #include <QObject>
 #include "qcustomplot.h"
 #include "plot.hpp"
+#include <QToolBar>
 
 #include <libps3000a-1.1/ps3000aApi.h>
 #ifndef PICO_STATUS
@@ -18,11 +19,21 @@ public:
   Window(Plot *);
 
 private:
-  int                     counter = 0;
+  int                     counter;
+  int                     period;
   QCustomPlot             customPlot;
   Plot *                  plot;
-  QCPColorMap *           colorMap = new QCPColorMap(customPlot.xAxis, customPlot.yAxis);
+  QCPColorMap *           colorMap;
+  QToolBar *              toolBar;
 
+  QSpinBox *              sizeBox;
+  QSpinBox *              periodBox;
+
+  QAction *               resetCanvasAction;
+  QAction *               setCyclePeriodUpAction;
+  QAction *               setCyclePeriodDownAction;
+  QAction *               setResetCycleStartAction;
+  QAction *               setResolutionAction;
 
 public slots:
   void setXYMode(UNIT *);
@@ -34,6 +45,17 @@ public slots:
   void data(QVector<double>, QVector<double>);
   void changeAxis(UNIT *);
   void resetPlot(UNIT *);
+
+  void resetCanvas();
+  void setPeriod(int);
+  void setResetCycleStart();
+  void setResolution(int);
+
+private:
+  void setMainWindow();
+  void setActions();
+  void setConnections();
+
 };
 
 #endif //WINDOW_H

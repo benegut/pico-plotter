@@ -177,6 +177,7 @@ void Plot::streamDataHandler(UNIT * unit)
     if(g_mode == 0)
       emit(resetPlot(unit));
 
+    std::cout << "check_entered_streamer" << std::endl;
 
     for (int i = 0; i < unit->channelCount; i++)
       {
@@ -355,7 +356,8 @@ void Plot::setDefaults(UNIT * unit)
                                  (PS3000A_CHANNEL)(PS3000A_CHANNEL_A + i),
                                  unit->channelSettings[PS3000A_CHANNEL_A + i].enabled,
                                  (PS3000A_COUPLING)unit->channelSettings[PS3000A_CHANNEL_A + i].DCcoupled,
-                                 (PS3000A_RANGE)unit->channelSettings[PS3000A_CHANNEL_A + i].range, 0);
+                                 (PS3000A_RANGE)unit->channelSettings[PS3000A_CHANNEL_A + i].range,
+                                 unit->channelSettings[PS3000A_CHANNEL_A + i].offset);
 
       printf(status?"SetDefaults:ps3000aSetChannel------ 0x%08lx \n":"", (long unsigned int)status);
 
@@ -534,6 +536,10 @@ void Plot::displaySettings(UNIT *unit)
 void Plot::setVoltages(UNIT * unit, int mode)
 {
     int32_t count = 0;
+    bool    xBool = false;
+    bool    yBool = false;
+    bool    zBool = false;
+    int     code = 0;
 
     /* See what ranges are available... */
     printf("Ranges:\n");
@@ -541,11 +547,13 @@ void Plot::setVoltages(UNIT * unit, int mode)
     {
         printf("%d -> %d mV\n", i, inputRanges[i]);
     }
+    /* See what modes are available... */
     printf("\nModes:\n");
     for(int i=0; i<4; i++)
       printf("%d -> %s\n", i, xymode_txt[i]);
 
     printf("\n");
+
 
     do
     {
@@ -558,6 +566,7 @@ void Plot::setVoltages(UNIT * unit, int mode)
         for (int32_t ch = 0; ch < unit->channelCount; ch++)
         {
             printf("\n");
+
             do
             {
                 printf("Channel %c range: ", 'A' + ch);
@@ -572,6 +581,7 @@ void Plot::setVoltages(UNIT * unit, int mode)
                 printf(" - %d mV\n", inputRanges[unit->channelSettings[ch].range]);
                 unit->channelSettings[ch].enabled = 1;
                 unit->channelSettings[ch].graph = graph;
+                unit->channelSettings[ch].offset = 0.0;
                 graph++;
                 count++;
             }
@@ -582,6 +592,13 @@ void Plot::setVoltages(UNIT * unit, int mode)
                 unit->channelSettings[ch].range = PS3000A_MAX_RANGES-1;
             }
 
+            if(unit->channelSettings[ch].enabled)
+              {
+                printf("Offset channel %c: ", 'A' + ch);
+                fflush(stdin);
+                scanf("%f", &unit->channelSettings[ch].offset);
+              }
+
             if((mode == 1) && unit->channelSettings[ch].enabled)
               {
                 do
@@ -591,7 +608,11 @@ void Plot::setVoltages(UNIT * unit, int mode)
                     scanf("%d", &unit->channelSettings[ch].xymode);
                     if(unit->channelSettings[ch].xymode >= 3)
                       printf("\nInvalide XY-Mode.\n");
-                    printf(" - %s\n", xymode_txt[unit->channelSettings[ch].xymode]);
+                    else
+                      {
+                        printf(" - %s\n", xymode_txt[unit->channelSettings[ch].xymode]);
+                        //code += unit->channelSettings[ch].xymode;
+                      }
                   }
                 while(unit->channelSettings[ch].xymode >= 3);
               }
@@ -611,6 +632,8 @@ void Plot::setVoltages(UNIT * unit, int mode)
               }
         }
         printf(count == 0? "\n** At least 1 channel must be enabled **\n\n":"");
+        //printf(code == 0? "\n** Not enough XY modes selected **\n\n":"");
+
     }
     while(count == 0);	// must have at least one channel enabled
 

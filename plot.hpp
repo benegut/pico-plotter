@@ -9,7 +9,6 @@
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
-//#include <curses.h>
 
 #include <libps3000a-1.1/ps3000aApi.h>
 #ifndef PICO_STATUS
@@ -19,7 +18,6 @@
 #include <QThread>
 #include <QApplication>
 #include <QObject>
-#include <cstdio>
 #include <cstring>
 #include <vector>
 #include <queue>
@@ -27,36 +25,26 @@
 
 #define memcpy_s(a, b, c, d) memcpy(a, c, d)
 
-#define PREF4 __stdcall
-
 typedef enum
   {
-    OFF, X, Y, INTENSITY
+    OFF, X, Y, Z
   }XYMODE;
 
-inline const char* xymode_txt[] = {"OFF", "X", "Y", "INTENSITY"};
+
+inline const char* xymode_txt[] = {"OFF", "X", "Y", "Z"};
 
 
 typedef struct
 {
-  int16_t DCcoupled;
   int16_t range;
   int16_t enabled;
+  int16_t bufferEnabled;
   XYMODE  xymode;
   int16_t graph;
   float   offset;
+  float   maxOffset;
+  float   minOffset;
 }CHANNEL_SETTINGS;
-
-
-typedef struct tTriggerDirections
-{
-  PS3000A_THRESHOLD_DIRECTION channelA;
-  PS3000A_THRESHOLD_DIRECTION channelB;
-  PS3000A_THRESHOLD_DIRECTION channelC;
-  PS3000A_THRESHOLD_DIRECTION channelD;
-  PS3000A_THRESHOLD_DIRECTION ext;
-  PS3000A_THRESHOLD_DIRECTION aux;
-}TRIGGER_DIRECTIONS;
 
 
 typedef struct
@@ -74,33 +62,28 @@ typedef struct
 }UNIT;
 
 
-inline bool           g_ready = 0;
-inline uint32_t       g_startIndex;
-inline int16_t        g_autoStopped;
-inline int32_t        g_sampleCount;
-inline int16_t        g_mode;
 
 inline uint16_t inputRanges [PS3000A_MAX_RANGES] = {10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000};
 
-inline char StreamFile[20]		= "stream.txt";
-
-
-typedef enum
-  {
-    ANALOGUE,
-    DIGITAL,
-    AGGREGATED,
-    MIXED
-  }MODE;
+inline std::vector<double> minOffsetArray;
+inline std::vector<double> maxOffsetArray;
 
 
 typedef struct tBufferInfo
 {
   UNIT *          unit;
-  MODE            mode;
   int16_t **      driverBuffers;
   int16_t **      appBuffers;
 } BUFFER_INFO;
+
+
+
+inline bool            g_ready;
+inline bool            g_autoStart;
+inline bool            g_autoStopped;
+inline uint32_t        g_startIndex;
+inline int32_t         g_sampleCount;
+
 
 
 class Plot : public QThread
@@ -108,45 +91,41 @@ class Plot : public QThread
   Q_OBJECT
 
 signals:
-  void setXYMode(UNIT *);
-  void setXYZMode(UNIT *);
-  void setNormalMode(UNIT *);
+  void setXYZMode();
+
   void sendData(double, double, double);
   void sendData(double, double);
   void sendData(QVector<double>, QVector<double>, int);
   void sendData(QVector<double>, QVector<double>);
-  void changeAxis(UNIT *);
-  void resetPlot(UNIT *);
+
+  void changeAxis();
+  void resetPlot();
 
 private:
   int32_t         _getch();
   int32_t         _kbhit();
-  int32_t         fopen_s(FILE **,
-                          const char *,
-                          const char *);
-  PICO_STATUS     changePowerSource(int16_t,
-                                    PICO_STATUS);
-  static void     callBackStreaming(int16_t,
-                                    int32_t,
-                                    uint32_t,
-                                    int16_t,
-                                    uint32_t,
-                                    int16_t,
-                                    int16_t,
-                                    void *);
-  void            streamDataHandler(UNIT *);
-  void            setDefaults(UNIT *);
-  void            collectStreamingImmediate(UNIT *);
-  void            get_info(UNIT *);
-  PICO_STATUS     openDevice(UNIT *);
-  void            closeDevice(UNIT *);
-  void            displaySettings(UNIT *);
-  void            setVoltages(UNIT *, int);
+
+  PICO_STATUS     changePowerSource(int16_t, PICO_STATUS);
+  static void     callBackStreaming(int16_t, int32_t,
+                                    uint32_t,int16_t,
+                                    uint32_t,int16_t,
+                                    int16_t, void *);
+  void            streamDataHandler(int);
+  void            get_info();
+  void            setChannels();
+  PICO_STATUS     openDevice();
+  void            closeDevice();
+  void            getOffsetArrays();
   void            run();
+
+public:
+  void            setDefaults();
 
 public:
   std::queue<std::vector<int>>          xyLine;
   int16_t                               xyLineSize;
+
+  UNIT *                                unit;
 };
 
 

@@ -29,4 +29,4 @@ LIBS += -L. -l$$QCPLIB
 LIBS += -L/opt/picoscope/lib -lps3000a
 
 # Input
-SOURCES += main.cpp plot.cpp window.cpp
+SOURCES += main.cpp plot.cpp window.cpp picochannelwindow.cpp

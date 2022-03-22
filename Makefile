@@ -54,11 +54,13 @@ OBJECTS_DIR   = ./
 
 SOURCES       = main.cpp \
 		plot.cpp \
-		window.cpp moc_window.cpp \
+		window.cpp \
+		picochannelwindow.cpp moc_window.cpp \
 		moc_plot.cpp
 OBJECTS       = main.o \
 		plot.o \
 		window.o \
+		picochannelwindow.o \
 		moc_window.o \
 		moc_plot.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
@@ -141,7 +143,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		test.pro window.hpp \
 		plot.hpp main.cpp \
 		plot.cpp \
-		window.cpp
+		window.cpp \
+		picochannelwindow.cpp
 QMAKE_TARGET  = test
 DESTDIR       = 
 TARGET        = test
@@ -326,7 +329,7 @@ distdir: FORCE
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents window.hpp plot.hpp $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp plot.cpp window.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp plot.cpp window.cpp picochannelwindow.cpp $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -408,6 +411,12 @@ window.o: window.cpp window.hpp \
 		/opt/picoscope/include/libps3000a-1.1/ps3000aApi.h \
 		/opt/picoscope/include/libps3000a-1.1/PicoStatus.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o window.o window.cpp
+
+picochannelwindow.o: picochannelwindow.cpp window.hpp \
+		plot.hpp \
+		/opt/picoscope/include/libps3000a-1.1/ps3000aApi.h \
+		/opt/picoscope/include/libps3000a-1.1/PicoStatus.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o picochannelwindow.o picochannelwindow.cpp
 
 moc_window.o: moc_window.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_window.o moc_window.cpp

@@ -9,3 +9,5 @@ qcustomplot.h
 .qmake.stash
 Makefile
 test
+images/
+videos/

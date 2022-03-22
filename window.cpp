@@ -1,15 +1,30 @@
 #include "window.hpp"
 #include "qcustomplot.h"
+#include <cstdio>
+#include <QDateTime>
+#include <QString>
+
 
 Window::Window(Plot * p)
   : plot(p)
+  , unit(p->unit)
   , colorMap(new QCPColorMap(customPlot.xAxis, customPlot.yAxis))
   , toolBar(new QToolBar())
   , counter(0)
+  , period(100)
 {
+  XYZ_PicoChannelWindow_Obj = new XYZ_PicoChannelWindow(plot);
+
+  customPlot.setInteraction(QCP::iRangeDrag, true);
+  customPlot.setInteraction(QCP::iRangeZoom, true);
+
   setMainWindow();
   setActions();
   setConnections();
+
+  g_videoIsRunning = false;
+  g_videoCounter = 0;
+  g_frameCounter = 0;
 }
 
 
@@ -23,32 +38,32 @@ void Window::setMainWindow()
 
 void Window::setActions()
 {
-  resetCanvasAction = new QAction();
-  toolBar->addAction(resetCanvasAction);
-  resetCanvasAction->setIconText("Reset");
-  connect(resetCanvasAction, SIGNAL(triggered()), this, SLOT(resetCanvas()));
+  streamButton = new QPushButton();
+  streamButton->setText(g_autoStart ? "&Stop" : "&Start");
+  toolBar->addWidget(streamButton);
 
-  setResetCycleStartAction = new QAction();
-  setResetCycleStartAction->setIconText("Shift");
-  toolBar->addAction(setResetCycleStartAction);
-  connect(setResetCycleStartAction, SIGNAL(triggered()), this, SLOT(setResetCycleStart()));
+  saveButton = new QPushButton(tr("&Save"));
+  toolBar->addWidget(saveButton);
+
+  videoButton = new QPushButton(tr("&Video"));
+  toolBar->addWidget(videoButton);
 
   sizeBox = new QSpinBox();
-  sizeBox->setMaximum(250);
+  sizeBox->setMaximum(300);
   sizeBox->setMinimum(50);
   sizeBox->setSingleStep(10);
-  sizeBox->setValue(210);
-  toolBar->addWidget(sizeBox);
-  connect(sizeBox, SIGNAL(valueChanged(int)), this, SLOT(setResolution(int)));
+  sizeBox->setValue(200);
+  sizeBoxAction = toolBar->addWidget(sizeBox);
+  sizeBoxAction->setVisible(false);
 
-  periodBox = new QSpinBox();
-  periodBox->setMaximum(100000);
-  periodBox->setMinimum(0);
-  periodBox->setSingleStep(1000);
-  periodBox->setValue(10000);
+  show_XYZ_AxisMenu = new QAction(tr("&Axis"));
+  show_XYZ_AxisMenu->setVisible(false);
+  menuBar()->addAction(show_XYZ_AxisMenu);
 
+  show_XYZ_PicoChannelMenu = new QAction(tr("&Channel"));
+  show_XYZ_PicoChannelMenu->setVisible(false);
+  menuBar()->addAction(show_XYZ_PicoChannelMenu);
 }
-
 
 
 void Window::setConnections()
@@ -58,86 +73,86 @@ void Window::setConnections()
   connect(plot, SIGNAL(sendData(QVector<double>, QVector<double>)), this, SLOT(data(QVector<double>, QVector<double>)));
   connect(plot, SIGNAL(sendData(double, double)), this, SLOT(data(double, double)));
 
-  connect(plot, SIGNAL(setXYMode(UNIT *)), this, SLOT(setXYMode(UNIT *)));
-  connect(plot, SIGNAL(setXYZMode(UNIT *)), this, SLOT(setXYZMode(UNIT *)));
-  connect(plot, SIGNAL(setNormalMode(UNIT *)), this, SLOT(setNormalMode(UNIT *)));
+  connect(plot, SIGNAL(setXYZMode()), this, SLOT(setXYZMode()));
 
-  connect(plot, SIGNAL(changeAxis(UNIT *)), this, SLOT(changeAxis(UNIT *)));
-  connect(plot, SIGNAL(resetPlot(UNIT *)), this, SLOT(resetPlot(UNIT *)));
+  connect(plot, SIGNAL(changeAxis()), this, SLOT(changeAxis()));
+  connect(plot, SIGNAL(resetPlot()), this, SLOT(resetPlot()));
+
+  connect(streamButton, SIGNAL(clicked()), this, SLOT(streamButton_Slot()));
+  connect(saveButton, SIGNAL(clicked()), this, SLOT(saveButton_Slot()));
+  connect(videoButton, SIGNAL(clicked()), this, SLOT(videoButton_Slot()));
+  connect(sizeBox, SIGNAL(valueChanged(int)), this, SLOT(setResolution(int)));
+
+  connect(show_XYZ_PicoChannelMenu, SIGNAL(triggered()), this, SLOT(show_XYZ_PicoChannelMenuSlot()));
+
+  connect(XYZ_PicoChannelWindow_Obj, SIGNAL(update_XY_Axis()), this, SLOT(update_XY_Axis()));
 }
 
 
-void Window::setXYMode(UNIT * unit)
+
+#ifndef QT_NO_CONTEXTMENU
+void Window::contextMenuEvent(QContextMenuEvent *event)
 {
-  customPlot.axisRect()->setupFullAxesBox(true);
-  int range = 0;
-  for (int i=0; i < unit->channelCount; i++)
+  QMenu menu(this);
+  menu.exec(event->globalPos());
+}
+#endif //QT_NO_CONTEXTMENU
+
+
+
+void Window::update_XY_Axis()
+{
+  int X_Range = 0;
+  int Y_Range = 0;
+
+  for (int ch=0; ch < unit->channelCount; ch++)
     {
-      if(unit->channelSettings[i].enabled)
+      if(unit->channelSettings[ch].enabled &&
+         unit->channelSettings[ch].xymode == X)
         {
-          int dum = unit->firstRange + unit->channelSettings[i].range;
-          range = inputRanges[dum] > range ? inputRanges[dum] : range;
+          int dum = unit->firstRange + unit->channelSettings[ch].range;
+          X_Range = inputRanges[dum] > X_Range ? inputRanges[dum] : X_Range;
+        }
+      else if(unit->channelSettings[ch].enabled &&
+              unit->channelSettings[ch].xymode == Y)
+        {
+          int dum = unit->firstRange + unit->channelSettings[ch].range;
+          Y_Range = inputRanges[dum] > Y_Range ? inputRanges[dum] : Y_Range;
         }
     }
-  colorMap->data()->setSize(210, 210);
-  colorMap->data()->setRange(QCPRange(-range,range), QCPRange(-range, range));
-  colorMap->setDataRange(QCPRange(-range,range));
-  colorMap->setGradient(QCPColorGradient::gpGrayscale);
+
+  if(!X_Range || !Y_Range)
+    printf("\n*****X and Y mode must be selected*****\n");
+
+  colorMap->data()->setRange(QCPRange(-X_Range,X_Range), QCPRange(-Y_Range, Y_Range));
   customPlot.rescaleAxes();
   customPlot.replot();
-  this->show();
-
-  counter = 0;
 }
 
 
-void Window::setXYZMode(UNIT * unit)
+
+void Window::setXYZMode()
 {
   customPlot.axisRect()->setupFullAxesBox(true);
   colorMap->data()->setSize(200, 200);
-  int range = 0;
-  for (int i=0; i < unit->channelCount; i++)
-    {
-      if(unit->channelSettings[i].enabled)
-        {
-          int dum = unit->firstRange + unit->channelSettings[i].range;
-          range = inputRanges[dum] > range ? inputRanges[dum] : range;
-        }
-    }
-  colorMap->data()->setRange(QCPRange(-range,range), QCPRange(-range, range));
+
+  update_XY_Axis();
+
   colorMap->setDataRange(QCPRange(-1,1));
   colorMap->setGradient(QCPColorGradient::gpGrayscale);
   colorMap->rescaleDataRange();
+  colorMap->data()->fill(0.0);
   customPlot.rescaleAxes();
   customPlot.replot();
-  this->show();
 
-  counter = 0;
-}
+  sizeBoxAction->setVisible(true);
 
+  show_XYZ_AxisMenu->setVisible(true);
+  show_XYZ_PicoChannelMenu->setVisible(true);
 
-void Window::setNormalMode(UNIT * unit)
-{
-  customPlot.xAxis->setRange(unit->timeBaseStart, unit->timeBaseEnd);
-  int range = 0;
-  for (int i=0; i < unit->channelCount; i++)
-    {
-      if(unit->channelSettings[i].enabled)
-        {
-          int graph = unit->channelSettings[i].graph;
-          customPlot.addGraph();
-          Qt::GlobalColor color = (Qt::GlobalColor)(graph+8);
-          QColor penColor(color);
-          penColor.setAlpha(100);
-          customPlot.graph(graph)->setPen(QPen(penColor));
-          int dum = unit->firstRange + unit->channelSettings[i].range;
-          range = inputRanges[dum] > range ? inputRanges[dum] : range;
-        }
-    }
-  customPlot.yAxis->setRange(-range, range);
-  customPlot.replot();
   this->show();
 }
+
 
 
 void Window::data(double x, double y, double z)                   //Maybe merge those to with default z = 10000.0 or smth.
@@ -150,10 +165,16 @@ void Window::data(double x, double y, double z)                   //Maybe merge 
     {
       customPlot.replot();
       customPlot.show();
+      if(g_videoIsRunning)
+        {
+          customPlot.savePng("videos/" + QString::number(g_videoCounter) + "/" + QString::number(g_frameCounter) + ".png");
+          g_frameCounter++;
+        }
     }
   if(counter%period == 0)
-    colorMap->data()->fill(0.0);
+    colorMap->data()->fill(1.0);
 }
+
 
 
 void Window::data(double x, double y)
@@ -192,7 +213,7 @@ void Window::data(QVector<double> key, QVector<double> vec)
 }
 
 
-void Window::changeAxis(UNIT * unit)
+void Window::changeAxis()
 {
   unit->timeBaseStart = unit->timeBaseEnd;
   unit->timeBaseEnd += unit->timeBase;
@@ -201,31 +222,19 @@ void Window::changeAxis(UNIT * unit)
 }
 
 
-void Window::resetPlot(UNIT * unit)
+void Window::resetPlot()
 {
   unit->timeBaseStart = 0;
   unit->timeBaseEnd = unit->timeBase;
   customPlot.xAxis->setRange(unit->timeBaseStart, unit->timeBaseEnd);
   customPlot.clearGraphs();
-  setNormalMode(unit);
 }
 
 
-void Window::resetCanvas()
+void Window::streamButton_Slot()
 {
-  colorMap->data()->fill(0.0);
-}
-
-
-void Window::setPeriod(int newPeriod)
-{
-}
-
-
-
-void Window::setResetCycleStart()
-{
-  counter += 100;
+  g_autoStart = !g_autoStart;
+  streamButton->setText(g_autoStart ? "&Stop" : "&Start");
 }
 
 
@@ -233,4 +242,33 @@ void Window::setResolution(int size)
 {
   colorMap->data()->setSize(size, size);
   customPlot.replot();
+}
+
+
+void Window::show_XYZ_PicoChannelMenuSlot()
+{
+  XYZ_PicoChannelWindow_Obj->Update_Window();
+  XYZ_PicoChannelWindow_Obj->show();
+}
+
+
+void Window::saveButton_Slot()
+{
+  customPlot.savePng("images/" + QString::number(QDateTime::currentMSecsSinceEpoch()) + ".png");
+}
+
+
+void Window::videoButton_Slot()
+{
+  if(!g_videoIsRunning)
+    g_frameCounter = 0;
+
+  while(!g_videoIsRunning &&
+        QDir("videos/" + QString::number(g_videoCounter)).exists())
+    g_videoCounter++;
+  QDir().mkdir("videos/" + QString::number(g_videoCounter));
+
+  g_videoIsRunning = !g_videoIsRunning;
+
+  videoButton->setText(g_videoIsRunning ? "&Running..." : "&Video");
 }

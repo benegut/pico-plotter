@@ -15,9 +15,7 @@
 #endif
 
 
-inline bool    g_videoIsRunning;
-inline int32_t g_videoCounter;
-inline int32_t g_frameCounter;
+
 
 
 struct Buttons : public QRadioButton
@@ -33,12 +31,16 @@ struct Buttons : public QRadioButton
 
 
 
+
 struct VoltageButtonGroupbox : public QGroupBox
 {
                         VoltageButtonGroupbox();
   Buttons *             Buttons_Obj;
   QGridLayout *         Group_Layout;
 };
+
+
+
 
 
 struct ModeButtonGroupbox : public QGroupBox
@@ -51,18 +53,19 @@ struct ModeButtonGroupbox : public QGroupBox
 
 
 
+
 class XYZ_PicoChannelWindow : public QWidget
 {
   Q_OBJECT
 
 public:
-  XYZ_PicoChannelWindow(Plot *);
+                              XYZ_PicoChannelWindow(UNIT *);
   void                        Update_Window();
   void                        Get_Offset_Range();
 
 private:
   UNIT *                      unit;
-  Plot *                      plot;
+
   QGridLayout *               layout;
   QCheckBox *                 Enabled_CheckBox_Obj[PS3000A_MAX_CHANNELS];
   VoltageButtonGroupbox *     VoltageButtonGroupbox_Obj[PS3000A_MAX_CHANNELS];
@@ -71,7 +74,11 @@ private:
   QPushButton *               Update_Button;
 
 signals:
-  void update_XY_Axis();
+  void                        update_XY_Axis();
+  void                        start_Stream_Signal();
+  void                        stop_Stream_Signal();
+  void                        send_Unit_Data_Signal(UNIT);
+
 
 public slots:
   void                        Update_Button_Slot();
@@ -81,21 +88,22 @@ public slots:
 
 
 
+
 class Window : public QMainWindow
 {
   Q_OBJECT
-public:
-  Window(Plot *);
 
 private:
-  int                     counter;
-  int                     period;
+  Worker *                Worker_Obj;
+  QThread                 Thread_Obj;
 
-  QCustomPlot             customPlot;
+  UNIT *                  unit;
+
+  QCustomPlot *           customPlot;
   QCPColorMap *           colorMap;
 
-  Plot *                  plot;
-  UNIT *                  unit;
+  XYZ_PicoChannelWindow * XYZ_PicoChannelWindow_Obj;
+  QAction *               show_XYZ_PicoChannelMenu;
 
   QToolBar *              toolBar;
   QPushButton *           streamButton;
@@ -104,38 +112,49 @@ private:
   QSpinBox *              sizeBox;
   QAction *               sizeBoxAction;
 
-  XYZ_PicoChannelWindow *     XYZ_PicoChannelWindow_Obj;
+  bool                    g_videoIsRunning;
+  int32_t                 g_videoCounter;
+  int32_t                 g_frameCounter;
 
-  QAction *               show_XYZ_AxisMenu;
+  int                     counter;
+  int                     period;
 
-  QAction *               show_XYZ_PicoChannelMenu;
 
+public:
+                          Window();
+  void                    start();
 
 
 private:
-  void setMainWindow();
-  void setActions();
-  void setConnections();
+  void                    set_MainWindow();
+  void                    set_Actions();
+  void                    set_Connections();
+  void                    setXYZMode();
+
+  void                    close_Device();
+  void                    closeEvent(QCloseEvent *);
+
 
 public slots:
-  void update_XY_Axis();
+  void                    update_XY_Axis();
+  void                    show_XYZ_PicoChannelMenuSlot();
+  void                    data(double, double, double);
+  void                    streamButton_Slot();
+  void                    saveButton_Slot();
+  void                    videoButton_Slot();
+  void                    setResolution(int);
 
-  void setXYZMode();
+  void                    get_Unit_Data_Slot(UNIT);
 
-  void show_XYZ_PicoChannelMenuSlot();
+  void                    stop_Stream_Slot();
 
-  void data(double, double, double);
-  void data(double, double);
-  void data(QVector<double>, QVector<double>, int);
-  void data(QVector<double>, QVector<double>);
 
-  void changeAxis();
-  void resetPlot();
+signals:
+  void                    send_Unit_Data_Signal(UNIT);
 
-  void streamButton_Slot();
-  void saveButton_Slot();
-  void videoButton_Slot();
-  void setResolution(int);
+  void                    start_Stream_Signal();
+  void                    stop_Stream_Signal();
+
 
 protected:
 #ifndef QT_NO_CONTEXTMENU
@@ -143,5 +162,7 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 };
+
+
 
 #endif //WINDOW_H

@@ -9,8 +9,7 @@
 int main(int argc, char **argv) {
 
   QApplication app(argc, argv);
-  Plot plot;
-  plot.start();
-  Window window(&plot);
+  Window window;
+  window.start();
   return app.exec();
 }

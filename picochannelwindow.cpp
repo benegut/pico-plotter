@@ -2,6 +2,9 @@
 #include <string>
 
 
+
+
+
 Buttons::Buttons()
 {
   for(int i = 0; i<11; i++)
@@ -18,6 +21,9 @@ Buttons::Buttons()
 }
 
 
+
+
+
 VoltageButtonGroupbox::VoltageButtonGroupbox()
 {
   Group_Layout = new QGridLayout();
@@ -28,6 +34,9 @@ VoltageButtonGroupbox::VoltageButtonGroupbox()
 
   this->setLayout(Group_Layout);
 }
+
+
+
 
 
 ModeButtonGroupbox::ModeButtonGroupbox()
@@ -44,11 +53,12 @@ ModeButtonGroupbox::ModeButtonGroupbox()
 
 
 
-XYZ_PicoChannelWindow::XYZ_PicoChannelWindow(Plot * p)
-  : unit(p->unit)
-  , plot(p)
+
+XYZ_PicoChannelWindow::XYZ_PicoChannelWindow(UNIT * u)
+  : unit(u)
 {
   layout = new QGridLayout(this);
+
 
   for(int i = 0; i<PS3000A_MAX_CHANNELS; i++)
     {
@@ -56,11 +66,13 @@ XYZ_PicoChannelWindow::XYZ_PicoChannelWindow(Plot * p)
       layout->addWidget(Enabled_CheckBox_Obj[i], 0, i);
     }
 
+
   for(int i = 0; i<PS3000A_MAX_CHANNELS; i++)
     {
       VoltageButtonGroupbox_Obj[i] = new VoltageButtonGroupbox();
       layout->addWidget(VoltageButtonGroupbox_Obj[i], 1, i);
     }
+
 
   for(int i = 0; i<PS3000A_MAX_CHANNELS; i++)
     {
@@ -68,11 +80,13 @@ XYZ_PicoChannelWindow::XYZ_PicoChannelWindow(Plot * p)
       layout->addWidget(Offset_SpinBox_Obj[i], 2, i);
     }
 
+
   for(int i = 0; i<PS3000A_MAX_CHANNELS; i++)
     {
       ModeButtonGroupbox_Obj[i] = new ModeButtonGroupbox();
       layout->addWidget(ModeButtonGroupbox_Obj[i], 3, i);
     }
+
 
   Update_Button = new QPushButton(tr("&Update"));
   layout->addWidget(Update_Button, 4, 3);
@@ -81,6 +95,7 @@ XYZ_PicoChannelWindow::XYZ_PicoChannelWindow(Plot * p)
 
   connect(Update_Button, SIGNAL(clicked()), this, SLOT(Update_Button_Slot()));
 }
+
 
 
 
@@ -101,6 +116,7 @@ void XYZ_PicoChannelWindow::Update_Button_Slot()
         }
     }
 
+
   /**** Set voltage range ****/
   for(int ch = 0; ch < PS3000A_MAX_CHANNELS; ch++)
     {
@@ -109,6 +125,7 @@ void XYZ_PicoChannelWindow::Update_Button_Slot()
            Enabled_CheckBox_Obj[ch]->isChecked())
           unit->channelSettings[ch].range = i;
     }
+
 
   /**** Set offset spinbox ****/
   for(int ch = 0; ch < PS3000A_MAX_CHANNELS; ch++)
@@ -128,6 +145,7 @@ void XYZ_PicoChannelWindow::Update_Button_Slot()
         unit->channelSettings[ch].offset = unit->channelSettings[ch].minOffset;
     }
 
+
   /*** Set mode ****/
   for(int ch = 0; ch < PS3000A_MAX_CHANNELS; ch++)
     for(int i=0; i<4; i++ )
@@ -135,11 +153,16 @@ void XYZ_PicoChannelWindow::Update_Button_Slot()
          Enabled_CheckBox_Obj[ch]->isChecked())
         unit->channelSettings[ch].xymode = (XYMODE)i;
 
-  g_autoStopped = 1;
+
+  emit(stop_Stream_Signal());
+  emit(send_Unit_Data_Signal(*unit));
   emit(update_XY_Axis());
   Update_Window();
-  g_autoStart = 1;
+  emit(start_Stream_Signal());
 }
+
+
+
 
 
 void XYZ_PicoChannelWindow::Update_Window()
@@ -148,10 +171,12 @@ void XYZ_PicoChannelWindow::Update_Window()
     if(unit->channelSettings[ch].enabled)
       Enabled_CheckBox_Obj[ch]->setChecked(1);
 
+
   for(int ch = 0; ch < PS3000A_MAX_CHANNELS; ch++)
     for(int i=0; i<11; i++ )
       if(unit->channelSettings[ch].range == i)
         VoltageButtonGroupbox_Obj[ch]->Buttons_Obj->Volt_Buttons[i]->click();
+
 
   Get_Offset_Range();
   for(int ch = 0; ch < PS3000A_MAX_CHANNELS; ch++)
@@ -163,6 +188,9 @@ void XYZ_PicoChannelWindow::Update_Window()
       if(unit->channelSettings[ch].xymode == (XYMODE)i)
         ModeButtonGroupbox_Obj[ch]->Buttons_Obj->Mode_Buttons[i]->click();
 }
+
+
+
 
 
 void XYZ_PicoChannelWindow::Get_Offset_Range()

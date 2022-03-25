@@ -60,15 +60,15 @@ static const uint qt_meta_data_Worker[] = {
        2,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    3,   34,    2, 0x06 /* Public */,
-       3,    1,   41,    2, 0x06 /* Public */,
+       1,    4,   34,    2, 0x06 /* Public */,
+       3,    1,   43,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-       5,    1,   44,    2, 0x0a /* Public */,
-       6,    0,   47,    2, 0x0a /* Public */,
+       5,    1,   46,    2, 0x0a /* Public */,
+       6,    0,   49,    2, 0x0a /* Public */,
 
  // signals: parameters
-    QMetaType::Void, QMetaType::Double, QMetaType::Double, QMetaType::Double,    2,    2,    2,
+    QMetaType::Void, QMetaType::Double, QMetaType::Double, QMetaType::Double, QMetaType::Double,    2,    2,    2,    2,
     QMetaType::Void, 0x80000000 | 4,    2,
 
  // slots: parameters
@@ -84,7 +84,7 @@ void Worker::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
         auto *_t = static_cast<Worker *>(_o);
         Q_UNUSED(_t)
         switch (_id) {
-        case 0: _t->sendData((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
+        case 0: _t->sendData((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3])),(*reinterpret_cast< double(*)>(_a[4]))); break;
         case 1: _t->send_Unit_Data_Signal((*reinterpret_cast< UNIT(*)>(_a[1]))); break;
         case 2: _t->get_Unit_Data_Slot((*reinterpret_cast< UNIT(*)>(_a[1]))); break;
         case 3: _t->streamDataHandler(); break;
@@ -111,7 +111,7 @@ void Worker::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
     } else if (_c == QMetaObject::IndexOfMethod) {
         int *result = reinterpret_cast<int *>(_a[0]);
         {
-            using _t = void (Worker::*)(double , double , double );
+            using _t = void (Worker::*)(double , double , double , double );
             if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&Worker::sendData)) {
                 *result = 0;
                 return;
@@ -168,9 +168,9 @@ int Worker::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 }
 
 // SIGNAL 0
-void Worker::sendData(double _t1, double _t2, double _t3)
+void Worker::sendData(double _t1, double _t2, double _t3, double _t4)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t3))) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t3))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t4))) };
     QMetaObject::activate(this, &staticMetaObject, 0, _a);
 }
 

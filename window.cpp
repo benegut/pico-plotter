@@ -30,7 +30,7 @@ Window::Window()
   g_streamIsRunning = false;
 
   counter           = 0;
-  period            = 500;
+  period            = 5000;
 
 }
 
@@ -70,6 +70,23 @@ void Window::set_Actions()
   videoButton = new QPushButton(tr("&Video"));
   toolBar->addWidget(videoButton);
 
+  resetButton = new QPushButton(tr("&Reset"));
+  toolBar->addWidget(resetButton);
+
+  scaleOffsetBox = new QDoubleSpinBox();
+  scaleOffsetBox->setMaximum(20);
+  scaleOffsetBox->setMinimum(-20);
+  scaleOffsetBox->setSingleStep(1);
+  scaleOffsetBox->setValue(0);
+  scaleOffsetBoxAction = toolBar->addWidget(scaleOffsetBox);
+
+  scaleAmplitudeBox = new QDoubleSpinBox();
+  scaleAmplitudeBox->setMaximum(20);
+  scaleAmplitudeBox->setMinimum(0);
+  scaleAmplitudeBox->setSingleStep(0.25);
+  scaleAmplitudeBox->setValue(1);
+  scaleAmplitudeBoxAction = toolBar->addWidget(scaleAmplitudeBox);
+
   sizeBox = new QSpinBox();
   sizeBox->setMaximum(300);
   sizeBox->setMinimum(50);
@@ -91,14 +108,17 @@ void Window::set_Connections()
 {
   connect(this, SIGNAL(send_Unit_Data_Signal(UNIT)), Worker_Obj, SLOT(get_Unit_Data_Slot(UNIT)));
   connect(Worker_Obj, SIGNAL(send_Unit_Data_Signal(UNIT)), this, SLOT(get_Unit_Data_Slot(UNIT)));
-  connect(Worker_Obj, SIGNAL(sendData(double, double, double)), this, SLOT(data(double, double, double)));
+  connect(Worker_Obj, SIGNAL(sendData(double, double, double, double)), this, SLOT(data(double, double, double, double)));
   connect(this, SIGNAL(start_Stream_Signal()), Worker_Obj, SLOT(streamDataHandler()));
   connect(this, SIGNAL(stop_Stream_Signal()), this, SLOT(stop_Stream_Slot()));
 
   connect(streamButton, SIGNAL(clicked()), this, SLOT(streamButton_Slot()));
   connect(saveButton, SIGNAL(clicked()), this, SLOT(saveButton_Slot()));
   connect(videoButton, SIGNAL(clicked()), this, SLOT(videoButton_Slot()));
+  connect(resetButton, SIGNAL(clicked()), this, SLOT(resetButton_Slot()));
   connect(sizeBox, SIGNAL(valueChanged(int)), this, SLOT(setResolution(int)));
+  connect(scaleOffsetBox, SIGNAL(valueChanged(double)), this, SLOT(set_Z_Scale_Offset(double)));
+  connect(scaleAmplitudeBox, SIGNAL(valueChanged(double)), this, SLOT(set_Z_Scale_Amplitude(double)));
 
   connect(show_XYZ_PicoChannelMenu, SIGNAL(triggered()), this, SLOT(show_XYZ_PicoChannelMenuSlot()));
 
@@ -173,7 +193,9 @@ void Window::setXYZMode()
 
   update_XY_Axis();
 
-  colorMap->setDataRange(QCPRange(-1,1));
+  Z_Scale_Amplitude = 1.0;
+  Z_Scale_Offset    = 0.0;
+  colorMap->setDataRange(QCPRange(-Z_Scale_Amplitude + Z_Scale_Offset, Z_Scale_Amplitude + Z_Scale_Offset));
   colorMap->setGradient(QCPColorGradient::gpGrayscale);
   colorMap->data()->fill(0.0);
   customPlot->replot();
@@ -185,11 +207,11 @@ void Window::setXYZMode()
 
 
 
-void Window::data(double x, double y, double z)
+void Window::data(double x, double y, double z, double z2)
 {
   int xInd, yInd;
   colorMap->data()->coordToCell(x, y, &xInd, &yInd);
-  colorMap->data()->setCell(xInd, yInd, z);
+  colorMap->data()->setCell(xInd, yInd, z-z2);
   counter++;
   if(counter%1000 == 0)
     {
@@ -201,8 +223,6 @@ void Window::data(double x, double y, double z)
           g_frameCounter++;
         }
     }
-  if(counter%period == 0)
-    colorMap->data()->fill(1.0);
 }
 
 
@@ -231,6 +251,31 @@ void Window::setResolution(int size)
   colorMap->data()->setSize(size, size);
   customPlot->replot();
 }
+
+
+
+
+
+
+void Window::set_Z_Scale_Offset(double offset)
+{
+  colorMap->setDataRange(QCPRange(-Z_Scale_Amplitude+offset,Z_Scale_Amplitude+offset));
+  customPlot->replot();
+  Z_Scale_Offset = offset;
+}
+
+
+
+
+
+
+void Window::set_Z_Scale_Amplitude(double amp)
+{
+  colorMap->setDataRange(QCPRange(-amp+Z_Scale_Offset,amp+Z_Scale_Offset));
+  customPlot->replot();
+  Z_Scale_Amplitude = amp;
+}
+
 
 
 
@@ -268,6 +313,15 @@ void Window::videoButton_Slot()
   g_videoIsRunning = !g_videoIsRunning;
 
   videoButton->setText(g_videoIsRunning ? "&Running..." : "&Video");
+}
+
+
+
+
+
+void Window::resetButton_Slot()
+{
+  colorMap->data()->fill(1.0);
 }
 
 

@@ -11,3 +11,7 @@ Makefile
 test
 images/
 videos/
+images/*
+videos/*
+video_copy/
+video_copy/*

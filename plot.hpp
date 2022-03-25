@@ -19,7 +19,6 @@
 #include <QApplication>
 #include <QObject>
 #include <vector>
-#include <string>
 
 
 
@@ -122,7 +121,7 @@ public slots:
 
 
 signals:
-  void            sendData(double, double, double);
+  void            sendData(double, double, double, double);
   void            send_Unit_Data_Signal(UNIT);
 
 };

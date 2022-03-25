@@ -292,7 +292,7 @@ void Worker::streamDataHandler()
 
       if(g_ready && g_sampleCount > 0)
         {
-          double x,y,z;
+          double x,y,z,z2;
           for(int i = g_startIndex; i < (int32_t)(g_startIndex + g_sampleCount); i++)
             {
               for(int ch = 0; ch < unit->channelCount; ch++)
@@ -304,8 +304,10 @@ void Worker::streamDataHandler()
                     y = ((double)bufferInfo.appBuffers[ch][i]*((double)inputRanges[ind])/((double)unit->maxValue));
                   else if(unit->channelSettings[ch].xymode == 3)
                     z = ((double)bufferInfo.appBuffers[ch][i]/((double)unit->maxValue));
+                  else if(unit->channelSettings[ch].xymode == 0)
+                    z2 = ((double)bufferInfo.appBuffers[ch][i]/((double)unit->maxValue));
                 }
-              emit(sendData(x,y,z));
+              emit(sendData(x,y,z,z2));
             }
         }
     }

@@ -89,6 +89,15 @@ public slots:
 
 
 
+class Time_Plot_Widget : public QWidget
+{
+
+};
+
+
+
+
+
 class Window : public QMainWindow
 {
   Q_OBJECT
@@ -109,8 +118,16 @@ private:
   QPushButton *           streamButton;
   QPushButton *           saveButton;
   QPushButton *           videoButton;
+  QPushButton *           resetButton;
   QSpinBox *              sizeBox;
   QAction *               sizeBoxAction;
+  QDoubleSpinBox *        scaleOffsetBox;
+  QAction *               scaleOffsetBoxAction;
+  QDoubleSpinBox *        scaleAmplitudeBox;
+  QAction *               scaleAmplitudeBoxAction;
+
+  double                  Z_Scale_Offset;
+  double                  Z_Scale_Amplitude;
 
   bool                    g_videoIsRunning;
   int32_t                 g_videoCounter;
@@ -138,12 +155,14 @@ private:
 public slots:
   void                    update_XY_Axis();
   void                    show_XYZ_PicoChannelMenuSlot();
-  void                    data(double, double, double);
+  void                    data(double, double, double, double);
   void                    streamButton_Slot();
   void                    saveButton_Slot();
   void                    videoButton_Slot();
+  void                    resetButton_Slot();
   void                    setResolution(int);
-
+  void                    set_Z_Scale_Offset(double);
+  void                    set_Z_Scale_Amplitude(double);
   void                    get_Unit_Data_Slot(UNIT);
 
   void                    stop_Stream_Slot();
